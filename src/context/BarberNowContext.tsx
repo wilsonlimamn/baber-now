@@ -11,8 +11,6 @@ interface BarberNowContextType {
   setCurrentView: (view: 'client' | 'barber_agenda' | 'barber_register') => void;
   selectedBarberId: string;
   setSelectedBarberId: (id: string) => void;
-  isMobilePreview: boolean;
-  setIsMobilePreview: (val: boolean) => void;
   addAppointment: (apt: Omit<Appointment, 'id' | 'createdAt'>) => string;
   updateAppointmentStatus: (id: string, status: AppointmentStatus) => void;
   registerBarber: (barber: Omit<Barber, 'id' | 'rating' | 'reviewsCount'>) => string;
@@ -117,7 +115,6 @@ export const BarberNowProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const [currentView, setCurrentView] = useState<'client' | 'barber_agenda' | 'barber_register'>('client');
   const [selectedBarberId, setSelectedBarberId] = useState<string>(INITIAL_BARBERS[0]?.id || 'b1');
-  const [isMobilePreview, setIsMobilePreview] = useState<boolean>(false);
 
   // Busca dados remotos do PostgreSQL no primeiro carregamento
   useEffect(() => {
@@ -254,8 +251,6 @@ export const BarberNowProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setCurrentView,
         selectedBarberId,
         setSelectedBarberId,
-        isMobilePreview,
-        setIsMobilePreview,
         addAppointment,
         updateAppointmentStatus,
         registerBarber,

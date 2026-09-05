@@ -20,6 +20,7 @@ import { Barber, ServiceItem, ClientAddress } from '../../types.ts';
 import { getTodayDateString, getOffsetDateString, DEFAULT_SERVICES } from '../../data/initialData.ts';
 import { BarbersGallery } from './BarbersGallery.tsx';
 import { BarberDetailModal } from './BarberDetailModal.tsx';
+import { BelemCoverageMap } from '../common/BelemCoverageMap.tsx';
 
 interface ClientBookingFlowProps {
   onBookingSuccess: (appointmentId: string) => void;
@@ -149,18 +150,18 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
 
   if (completedAppointmentId) {
     return (
-      <div className="max-w-2xl mx-auto py-8 px-4">
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 text-center shadow-lg">
-          <div className="w-16 h-16 bg-emerald-50 border border-emerald-200 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 className="w-9 h-9" />
+      <div className="w-full max-w-2xl mx-auto py-4 sm:py-8 px-3 sm:px-4">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-8 text-center shadow-lg">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-emerald-50 border border-emerald-200 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="w-8 h-8 sm:w-9 sm:h-9" />
           </div>
 
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Solicitação Enviada com Sucesso!</h2>
-          <p className="text-slate-600 text-sm max-w-md mx-auto mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">Solicitação Enviada com Sucesso!</h2>
+          <p className="text-slate-600 text-xs sm:text-sm max-w-md mx-auto mb-6">
             O barbeiro <span className="font-semibold text-blue-600">{selectedBarber?.name}</span> já recebeu seu pedido na agenda e foi notificado para o atendimento em domicílio.
           </p>
 
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-left mb-6 space-y-2.5 text-sm text-slate-700">
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 sm:p-4 text-left mb-6 space-y-2.5 text-xs sm:text-sm text-slate-700">
             <div className="flex justify-between items-center border-b border-slate-200 pb-2">
               <span className="text-slate-500">Código do Pedido:</span>
               <span className="font-mono font-bold text-blue-600">#{completedAppointmentId}</span>
@@ -173,9 +174,9 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
               <span className="text-slate-500">Data e Horário:</span>
               <span className="font-semibold text-slate-900">{selectedDate.split('-').reverse().join('/')} às {selectedTime}</span>
             </div>
-            <div className="flex justify-between items-start">
+            <div className="flex justify-between items-start gap-2">
               <span className="text-slate-500 shrink-0">Endereço:</span>
-              <span className="text-right font-medium text-slate-900">
+              <span className="text-right font-medium text-slate-900 break-words">
                 {address.street}, {address.number} - {address.neighborhood}
                 {address.complement ? ` (${address.complement})` : ''}
               </span>
@@ -186,11 +187,11 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="flex flex-col gap-2.5 sm:gap-3">
             <button
               id="btn-whatsapp-confirmation"
               onClick={handleOpenWhatsApp}
-              className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl font-semibold text-sm transition shadow-sm cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl font-semibold text-sm transition shadow-sm cursor-pointer"
             >
               <MessageCircle className="w-4 h-4" />
               <span>Falar com Barbeiro no WhatsApp</span>
@@ -204,7 +205,7 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
                   setCurrentView('barber_agenda');
                 }
               }}
-              className="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-xl font-semibold text-sm transition shadow-sm cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-xl font-semibold text-sm transition shadow-sm cursor-pointer"
             >
               <CalendarIcon className="w-4 h-4 text-blue-400" />
               <span>Ver na Agenda do Barbeiro</span>
@@ -217,7 +218,7 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
                 setStep(1);
                 setSelectedBarber(null);
               }}
-              className="flex items-center justify-center gap-2 border border-slate-300 hover:bg-slate-100 text-slate-700 px-4 py-3 rounded-xl font-medium text-sm transition cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 border border-slate-300 hover:bg-slate-100 text-slate-700 px-4 py-3 rounded-xl font-medium text-sm transition cursor-pointer"
             >
               Fazer Outro Agendamento
             </button>
@@ -228,31 +229,31 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-6 px-4">
+    <div className="w-full max-w-4xl mx-auto py-4 sm:py-6 px-3 sm:px-4">
       {/* Hero Welcome Badge */}
-      <div className="mb-6 bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+      <div className="mb-6 bg-white border border-slate-200 p-4 sm:p-6 rounded-2xl shadow-sm">
         <div className="text-center sm:text-left flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold mb-2.5">
               <Sparkles className="w-3.5 h-3.5" />
               <span>Barbearia Delivery em Domicílio</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight leading-tight">
               Corte Cabelo & Barba sem sair de casa
             </h1>
-            <p className="text-slate-500 text-sm mt-1">
+            <p className="text-slate-500 text-xs sm:text-sm mt-1">
               Informe seu endereço, data e horário para conectar-se aos melhores barbeiros disponíveis no seu bairro.
             </p>
           </div>
 
-          <div className="shrink-0 flex items-center justify-center sm:justify-start gap-4 text-xs text-slate-600 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+          <div className="shrink-0 flex flex-wrap items-center justify-center sm:justify-start gap-2.5 sm:gap-4 text-xs text-slate-600 bg-slate-50 p-2.5 sm:p-3.5 rounded-xl border border-slate-200">
             <div className="flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span className="font-medium">Barbeiros Verificados</span>
+              <span className="font-medium text-[11px] sm:text-xs">Barbeiros Verificados</span>
             </div>
             <div className="flex items-center gap-1.5">
               <Home className="w-4 h-4 text-blue-600" />
-              <span className="font-medium">Equipamento Esterilizado</span>
+              <span className="font-medium text-[11px] sm:text-xs">Equipamento Esterilizado</span>
             </div>
           </div>
         </div>
@@ -498,7 +499,20 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end">
+            {/* Mapa Interativo de Cobertura em Belém (100% Gratuito e Leve) */}
+            <div className="mt-5">
+              <BelemCoverageMap
+                neighborhood={address.neighborhood}
+                street={address.street}
+                number={address.number}
+                city={address.city}
+                availableBarbersCount={availableBarbersForNeighborhood.length}
+                showToggle={true}
+                defaultExpanded={true}
+              />
+            </div>
+
+            <div className="mt-6 flex flex-col sm:flex-row justify-end">
               <button
                 id="btn-step1-next"
                 onClick={() => {
@@ -508,7 +522,7 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
                   }
                   setStep(2);
                 }}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition shadow-sm cursor-pointer"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 sm:py-2.5 rounded-xl text-sm transition shadow-sm cursor-pointer"
               >
                 <span>Avançar para Serviços e Horário</span>
                 <ChevronRight className="w-4 h-4" />
@@ -666,10 +680,10 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+          <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-200">
             <button
               onClick={() => setStep(1)}
-              className="text-xs text-slate-500 hover:text-slate-800 cursor-pointer font-medium"
+              className="w-full sm:w-auto text-center py-2 text-xs text-slate-500 hover:text-slate-800 cursor-pointer font-medium"
             >
               ← Voltar ao endereço
             </button>
@@ -683,7 +697,7 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
                 }
                 setStep(3);
               }}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition shadow-sm cursor-pointer"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 sm:py-2.5 rounded-xl text-sm transition shadow-sm cursor-pointer"
             >
               <span>Ver Barbeiros para {address.neighborhood}</span>
               <ChevronRight className="w-4 h-4" />
@@ -834,10 +848,10 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+          <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-200">
             <button
               onClick={() => setStep(2)}
-              className="text-xs text-slate-500 hover:text-slate-800 cursor-pointer font-medium"
+              className="w-full sm:w-auto text-center py-2 text-xs text-slate-500 hover:text-slate-800 cursor-pointer font-medium"
             >
               ← Voltar para Serviços
             </button>
@@ -846,7 +860,7 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
               id="btn-step3-next"
               disabled={!selectedBarber}
               onClick={() => setStep(4)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition shadow-sm cursor-pointer"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 sm:py-2.5 rounded-xl text-sm transition shadow-sm cursor-pointer"
             >
               <span>Avançar para Seus Dados</span>
               <ChevronRight className="w-4 h-4" />
@@ -930,7 +944,7 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
                   id="input-client-phone"
                   type="tel"
                   required
-                  placeholder="Ex: (11) 98888-7777"
+                  placeholder="Ex: (91) 98888-7777"
                   value={clientPhone}
                   onChange={e => setClientPhone(e.target.value)}
                   className="w-full bg-white border border-slate-300 rounded-xl pl-10 pr-3.5 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition placeholder:text-slate-400"
@@ -953,11 +967,11 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+          <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-200">
             <button
               type="button"
               onClick={() => setStep(3)}
-              className="text-xs text-slate-500 hover:text-slate-800 cursor-pointer font-medium"
+              className="w-full sm:w-auto text-center py-2 text-xs text-slate-500 hover:text-slate-800 cursor-pointer font-medium"
             >
               ← Voltar para Escolha de Barbeiro
             </button>
@@ -965,10 +979,10 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
             <button
               type="submit"
               id="btn-confirm-appointment"
-              className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold px-8 py-3 rounded-xl text-sm transition shadow-sm cursor-pointer"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold px-6 sm:px-8 py-3.5 sm:py-3 rounded-xl text-sm transition shadow-sm cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>Confirmar Agendamento em Domicílio</span>
+              <span>Confirmar Agendamento</span>
             </button>
           </div>
         </form>

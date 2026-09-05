@@ -89,15 +89,15 @@ export const BarberRegistrationForm: React.FC = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto py-6 px-4">
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
+    <div className="w-full max-w-3xl mx-auto py-4 sm:py-6 px-3 sm:px-4">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-8 shadow-sm">
         {/* Header */}
         <div className="flex items-center gap-3.5 mb-6 pb-5 border-b border-slate-200">
-          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center shrink-0 shadow-xs">
-            <UserCheck className="w-6 h-6" />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center shrink-0 shadow-xs">
+            <UserCheck className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+            <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight leading-tight">
               Cadastro de Barbeiro Parceiro Barber-Now
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -285,11 +285,11 @@ export const BarberRegistrationForm: React.FC = () => {
           </div>
 
           {/* Submit */}
-          <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
+          <div className="pt-4 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
             <button
               type="button"
               onClick={() => setCurrentView('client')}
-              className="text-xs text-slate-500 hover:text-slate-800 font-medium cursor-pointer"
+              className="w-full sm:w-auto text-center py-2 text-xs text-slate-500 hover:text-slate-800 font-medium cursor-pointer"
             >
               Cancelar
             </button>
@@ -297,7 +297,7 @@ export const BarberRegistrationForm: React.FC = () => {
             <button
               id="btn-submit-barber-registration"
               type="submit"
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-xl text-sm transition shadow-xs cursor-pointer"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 sm:px-8 py-3 rounded-xl text-sm transition shadow-xs cursor-pointer"
             >
               <span>Cadastrar e Abrir Minha Agenda</span>
               <ArrowRight className="w-4 h-4" />

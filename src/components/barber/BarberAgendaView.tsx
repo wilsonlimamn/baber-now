@@ -13,11 +13,13 @@ import {
   Layers,
   ChevronLeft,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  Map
 } from 'lucide-react';
 import { useBarberNow } from '../../context/BarberNowContext.tsx';
 import { AppointmentStatus } from '../../types.ts';
 import { getTodayDateString, getOffsetDateString } from '../../data/initialData.ts';
+import { BelemCoverageMap } from '../common/BelemCoverageMap.tsx';
 
 export const BarberAgendaView: React.FC = () => {
   const {
@@ -43,6 +45,9 @@ export const BarberAgendaView: React.FC = () => {
 
   // Filter for appointment status
   const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  // Toggle map view for individual appointment
+  const [expandedMapAptId, setExpandedMapAptId] = useState<string | null>(null);
 
   // New neighborhood input
   const [newNeighborhoodName, setNewNeighborhoodName] = useState('');
@@ -143,9 +148,9 @@ export const BarberAgendaView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto py-6 px-4 space-y-6">
+    <div className="w-full max-w-6xl mx-auto py-4 sm:py-6 px-3 sm:px-4 space-y-4 sm:space-y-6">
       {/* Barber Profile Selector & Top Header */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           {/* Active Barber Profile Info */}
           <div className="flex items-center gap-3.5">
@@ -394,6 +399,20 @@ export const BarberAgendaView: React.FC = () => {
 
                         {/* Direct Contacts & Maps */}
                         <div className="flex items-center gap-2 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedMapAptId(expandedMapAptId === apt.id ? null : apt.id)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer ${
+                              expandedMapAptId === apt.id
+                                ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
+                            }`}
+                            title="Visualizar mapa do bairro de Belém"
+                          >
+                            <Map className="w-3.5 h-3.5 text-blue-600" />
+                            <span>{expandedMapAptId === apt.id ? 'Fechar Mapa' : 'Ver no Mapa'}</span>
+                          </button>
+
                           <a
                             href={mapUrl}
                             target="_blank"
@@ -402,7 +421,7 @@ export const BarberAgendaView: React.FC = () => {
                             title="Abrir rota no Google Maps"
                           >
                             <Navigation className="w-3.5 h-3.5 text-blue-600" />
-                            <span>Ver Rota / GPS</span>
+                            <span>GPS Google</span>
                             <ExternalLink className="w-3 h-3 text-slate-400" />
                           </a>
 
@@ -510,6 +529,20 @@ export const BarberAgendaView: React.FC = () => {
                           )}
                         </div>
                       </div>
+
+                      {/* Mapa do Atendimento (quando ativado pelo barbeiro) */}
+                      {expandedMapAptId === apt.id && (
+                        <div className="mt-4 pt-4 border-t border-slate-100">
+                          <BelemCoverageMap
+                            neighborhood={apt.address.neighborhood}
+                            street={apt.address.street}
+                            number={apt.address.number}
+                            city={apt.address.city}
+                            showToggle={false}
+                            defaultExpanded={true}
+                          />
+                        </div>
+                      )}
                     </div>
                   );
                 })}
