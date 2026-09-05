@@ -28,12 +28,12 @@ export const BarberRegistrationForm: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [experienceYears, setExperienceYears] = useState(5);
   const [bio, setBio] = useState('');
-  const [city, setCity] = useState('São Paulo');
+  const [city, setCity] = useState('Belém');
   const [avatar, setAvatar] = useState(AVATAR_PRESETS[0]);
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([
-    'Pinheiros',
-    'Jardins',
-    'Vila Madalena'
+    'Nazaré',
+    'Umarizal',
+    'Batista Campos',
   ]);
   const [workingStart, setWorkingStart] = useState('08:00');
   const [workingEnd, setWorkingEnd] = useState('20:00');
@@ -81,7 +81,7 @@ export const BarberRegistrationForm: React.FC = () => {
       },
       availableDays: [1, 2, 3, 4, 5, 6],
       status: 'available',
-      city: city.trim() || 'São Paulo',
+      city: city.trim() || 'Belém',
     });
 
     // Navigate to agenda to immediately see the new barber's schedule

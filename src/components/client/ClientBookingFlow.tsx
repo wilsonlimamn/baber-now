@@ -35,9 +35,9 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
   const [address, setAddress] = useState<ClientAddress>({
     street: '',
     number: '',
-    neighborhood: neighborhoods[0]?.name || 'Pinheiros',
+    neighborhood: neighborhoods[0]?.name || 'Nazaré',
     complement: '',
-    city: 'São Paulo',
+    city: neighborhoods[0]?.city || 'Belém',
     reference: '',
   });
 
@@ -285,7 +285,7 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              Disponíveis Hoje em SP
+              {neighborhoods[0]?.city ? `Disponíveis Hoje em ${neighborhoods[0].city}` : 'Disponíveis Hoje em Belém'}
             </span>
           </div>
         </div>
@@ -401,7 +401,15 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
                 <select
                   id="select-neighborhood"
                   value={address.neighborhood}
-                  onChange={e => setAddress({ ...address, neighborhood: e.target.value })}
+                  onChange={e => {
+                    const sel = e.target.value;
+                    const found = neighborhoods.find(n => n.name === sel);
+                    setAddress(prev => ({
+                      ...prev,
+                      neighborhood: sel,
+                      city: found?.city || prev.city,
+                    }));
+                  }}
                   className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
                 >
                   {neighborhoods.map(n => (
@@ -423,7 +431,7 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
                 <input
                   id="input-street"
                   type="text"
-                  placeholder="Ex: Rua Oscar Freire"
+                  placeholder="Ex: Av. Governador José Malcher, 815"
                   value={address.street}
                   onChange={e => setAddress({ ...address, street: e.target.value })}
                   className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition placeholder:text-slate-400"

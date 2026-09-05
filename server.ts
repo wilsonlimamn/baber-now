@@ -99,7 +99,7 @@ async function startServer() {
             JSON.stringify(barber.workingHours || { start: '08:00', end: '20:00' }),
             JSON.stringify(barber.availableDays || [1, 2, 3, 4, 5, 6]),
             barber.status || 'available',
-            barber.city || 'São Paulo',
+            barber.city || 'Belém',
           ]
         );
       } catch (err) {

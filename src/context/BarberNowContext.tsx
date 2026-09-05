@@ -146,7 +146,7 @@ export const BarberNowProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const addNeighborhood = (name: string, region: string, city: string) => {
     const exists = neighborhoods.some(n => n.name.toLowerCase() === name.trim().toLowerCase());
     if (!exists && name.trim()) {
-      setNeighborhoods(prev => [...prev, { name: name.trim(), region: region || 'Geral', city: city || 'São Paulo' }]);
+      setNeighborhoods(prev => [...prev, { name: name.trim(), region: region || 'Geral', city: city || prev[0]?.city || 'Belém' }]);
     }
   };
 

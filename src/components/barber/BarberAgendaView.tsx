@@ -576,7 +576,7 @@ export const BarberAgendaView: React.FC = () => {
               <form onSubmit={handleAddNewNeighborhood} className="flex flex-col sm:flex-row gap-2 max-w-xl">
                 <input
                   type="text"
-                  placeholder="Nome do Bairro (Ex: Vila Olímpia)"
+                  placeholder="Nome do Bairro (Ex: Canudos)"
                   value={newNeighborhoodName}
                   onChange={e => setNewNeighborhoodName(e.target.value)}
                   className="flex-1 bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 placeholder:text-slate-400"
@@ -587,11 +587,11 @@ export const BarberAgendaView: React.FC = () => {
                   onChange={e => setNewNeighborhoodRegion(e.target.value)}
                   className="bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-600"
                 >
-                  <option value="Zona Oeste">Zona Oeste</option>
-                  <option value="Zona Sul">Zona Sul</option>
-                  <option value="Zona Leste">Zona Leste</option>
-                  <option value="Zona Norte">Zona Norte</option>
-                  <option value="Central">Centro</option>
+                  <option value="Centro">Centro</option>
+                  <option value="Centro-Sul">Centro-Sul</option>
+                  <option value="Sul">Sul</option>
+                  <option value="Norte">Norte</option>
+                  <option value="Distrito de Icoaraci">Distrito de Icoaraci</option>
                 </select>
 
                 <button

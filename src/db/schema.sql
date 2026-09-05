@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS barbers (
   working_hours JSONB DEFAULT '{"start": "08:00", "end": "20:00"}'::jsonb,
   available_days JSONB DEFAULT '[1,2,3,4,5,6]'::jsonb,
   status VARCHAR(20) DEFAULT 'available',
-  city VARCHAR(100) DEFAULT 'São Paulo',
+  city VARCHAR(100) DEFAULT 'Belém',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -45,5 +45,5 @@ CREATE TABLE IF NOT EXISTS neighborhoods (
   id SERIAL PRIMARY KEY,
   name VARCHAR(100) UNIQUE NOT NULL,
   region VARCHAR(100) NOT NULL,
-  city VARCHAR(100) DEFAULT 'São Paulo'
+  city VARCHAR(100) DEFAULT 'Belém'
 );
