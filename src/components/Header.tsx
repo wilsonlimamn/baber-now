@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, UserCheck, RotateCcw, Clock, Sparkles } from 'lucide-react';
+import { Calendar, UserCheck, Clock, Sparkles } from 'lucide-react';
 import { useBarberNow } from '../context/BarberNowContext.tsx';
 
 interface HeaderProps {
@@ -11,7 +11,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenClientAppointments }) => {
     currentView,
     setCurrentView,
     appointments,
-    resetDemoData,
   } = useBarberNow();
 
   const pendingCount = appointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length;
@@ -104,21 +103,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenClientAppointments }) => {
               <Clock className="w-3.5 h-3.5 text-blue-400 shrink-0" />
               <span className="hidden sm:inline">Meus Pedidos</span>
               <span className="sm:hidden text-[11px]">Pedidos</span>
-            </button>
-
-            {/* Reset Demo Data Button */}
-            <button
-              id="btn-reset-demo"
-              onClick={() => {
-                if (window.confirm('Deseja redefinir os dados para o catálogo padrão de Belém-PA?')) {
-                  resetDemoData();
-                  window.location.reload();
-                }
-              }}
-              className="p-1.5 sm:p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-white transition cursor-pointer shrink-0"
-              title="Restaurar dados de Belém"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
