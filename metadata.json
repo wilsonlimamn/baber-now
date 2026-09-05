@@ -1,0 +1,6 @@
+{
+  "name": "Barber-Now",
+  "description": "Plataforma de agendamento de corte de cabelo a domicílio conectando clientes e barbeiros por bairros e horários.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

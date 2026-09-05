@@ -1,0 +1,219 @@
+import express from 'express';
+import path from 'path';
+import { createServer as createViteServer } from 'vite';
+import { pool, initDb } from './src/db/database.ts';
+import { INITIAL_BARBERS, INITIAL_APPOINTMENTS, INITIAL_NEIGHBORHOODS } from './src/data/initialData.ts';
+
+const PORT = 3000;
+
+async function startServer() {
+  const app = express();
+  app.use(express.json());
+
+  // Inicializa tabelas PostgreSQL se conexão existir
+  if (pool) {
+    try {
+      await initDb();
+    } catch (e) {
+      console.warn('Postgres init warning:', e);
+    }
+  }
+
+  // --- API ROUTES ---
+
+  // Status & Health Check
+  app.get('/api/health', async (req, res) => {
+    let dbStatus = 'disconnected';
+    if (pool) {
+      try {
+        const result = await pool.query('SELECT NOW()');
+        dbStatus = result.rows.length > 0 ? 'connected' : 'error';
+      } catch (err: any) {
+        dbStatus = `error: ${err.message}`;
+      }
+    }
+    res.json({
+      status: 'ok',
+      app: 'Barber-Now',
+      database: dbStatus,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  // GET Barbers
+  app.get('/api/barbers', async (req, res) => {
+    if (pool) {
+      try {
+        const { rows } = await pool.query('SELECT * FROM barbers ORDER BY rating DESC');
+        if (rows.length > 0) {
+          return res.json(rows.map(r => ({
+            id: r.id,
+            name: r.name,
+            avatar: r.avatar,
+            rating: parseFloat(r.rating) || 5.0,
+            reviewsCount: r.reviews_count || 0,
+            phone: r.phone,
+            experienceYears: r.experience_years,
+            bio: r.bio,
+            neighborhoods: r.neighborhoods || [],
+            services: r.services || [],
+            workingHours: r.working_hours || { start: '08:00', end: '20:00' },
+            availableDays: r.available_days || [1, 2, 3, 4, 5, 6],
+            status: r.status,
+            city: r.city,
+          })));
+        }
+      } catch (err) {
+        console.error('Erro ao buscar barbeiros do banco:', err);
+      }
+    }
+    return res.json(INITIAL_BARBERS);
+  });
+
+  // POST Barber (Cadastrar Barbeiro)
+  app.post('/api/barbers', async (req, res) => {
+    const barber = req.body;
+    const newId = barber.id || `b_${Date.now()}`;
+
+    if (pool) {
+      try {
+        await pool.query(
+          `INSERT INTO barbers (id, name, avatar, rating, reviews_count, phone, experience_years, bio, neighborhoods, services, working_hours, available_days, status, city)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+           ON CONFLICT (id) DO UPDATE SET
+             neighborhoods = EXCLUDED.neighborhoods,
+             phone = EXCLUDED.phone,
+             bio = EXCLUDED.bio,
+             status = EXCLUDED.status`,
+          [
+            newId,
+            barber.name,
+            barber.avatar,
+            barber.rating || 5.0,
+            barber.reviewsCount || 1,
+            barber.phone,
+            barber.experienceYears || 1,
+            barber.bio || '',
+            JSON.stringify(barber.neighborhoods || []),
+            JSON.stringify(barber.services || []),
+            JSON.stringify(barber.workingHours || { start: '08:00', end: '20:00' }),
+            JSON.stringify(barber.availableDays || [1, 2, 3, 4, 5, 6]),
+            barber.status || 'available',
+            barber.city || 'São Paulo',
+          ]
+        );
+      } catch (err) {
+        console.error('Erro ao salvar barbeiro:', err);
+      }
+    }
+    return res.json({ id: newId, ...barber });
+  });
+
+  // GET Appointments
+  app.get('/api/appointments', async (req, res) => {
+    if (pool) {
+      try {
+        const { rows } = await pool.query('SELECT * FROM appointments ORDER BY created_at DESC');
+        if (rows.length > 0) {
+          return res.json(rows.map(r => ({
+            id: r.id,
+            barberId: r.barber_id,
+            barberName: r.barber_name,
+            barberPhone: r.barber_phone,
+            barberAvatar: r.barber_avatar,
+            clientName: r.client_name,
+            clientPhone: r.client_phone,
+            address: r.address,
+            serviceId: r.service_id,
+            serviceName: r.service_name,
+            price: parseFloat(r.price) || 0,
+            durationMin: r.duration_min,
+            date: r.appointment_date,
+            time: r.appointment_time,
+            status: r.status,
+            notes: r.notes,
+            createdAt: r.created_at,
+          })));
+        }
+      } catch (err) {
+        console.error('Erro ao listar agendamentos do banco:', err);
+      }
+    }
+    return res.json(INITIAL_APPOINTMENTS);
+  });
+
+  // POST Appointment (Novo Agendamento)
+  app.post('/api/appointments', async (req, res) => {
+    const apt = req.body;
+    const newId = apt.id || `apt_${Date.now()}`;
+
+    if (pool) {
+      try {
+        await pool.query(
+          `INSERT INTO appointments (
+            id, barber_id, barber_name, barber_phone, barber_avatar,
+            client_name, client_phone, address, service_id, service_name,
+            price, duration_min, appointment_date, appointment_time, status, notes
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+          [
+            newId,
+            apt.barberId,
+            apt.barberName,
+            apt.barberPhone,
+            apt.barberAvatar,
+            apt.clientName,
+            apt.clientPhone,
+            JSON.stringify(apt.address),
+            apt.serviceId,
+            apt.serviceName,
+            apt.price,
+            apt.durationMin || 30,
+            apt.date,
+            apt.time,
+            apt.status || 'pending',
+            apt.notes || '',
+          ]
+        );
+      } catch (err) {
+        console.error('Erro ao salvar agendamento no PostgreSQL:', err);
+      }
+    }
+    return res.json({ id: newId, ...apt });
+  });
+
+  // PATCH Appointment Status
+  app.patch('/api/appointments/:id/status', async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (pool) {
+      try {
+        await pool.query('UPDATE appointments SET status = $1 WHERE id = $2', [status, id]);
+      } catch (err) {
+        console.error('Erro ao atualizar status do agendamento:', err);
+      }
+    }
+    return res.json({ id, status });
+  });
+
+  // Vite Middleware para Dev e Static para Produção
+  if (process.env.NODE_ENV !== 'production') {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(process.cwd(), 'dist');
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  }
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`💈 Barber-Now Server rodando em http://0.0.0.0:${PORT}`);
+  });
+}
+
+startServer();
