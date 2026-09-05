@@ -128,12 +128,13 @@ export const Header: React.FC<HeaderProps> = ({ onOpenClientAppointments }) => {
             <button
               id="btn-reset-demo"
               onClick={() => {
-                if (window.confirm('Deseja restaurar os dados de demonstração com barbeiros e solicitações de exemplo?')) {
+                if (window.confirm('Deseja redefinir os dados para o catálogo padrão de Belém-PA?')) {
                   resetDemoData();
+                  window.location.reload();
                 }
               }}
               className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-white transition cursor-pointer"
-              title="Restaurar dados demo"
+              title="Restaurar dados de Belém"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   MapPin,
   Calendar as CalendarIcon,
@@ -73,6 +73,20 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
 
   // Success state
   const [completedAppointmentId, setCompletedAppointmentId] = useState<string | null>(null);
+
+  // Garantir que o bairro e cidade selecionados correspondam à lista de Belém
+  useEffect(() => {
+    if (neighborhoods.length > 0) {
+      const exists = neighborhoods.some(n => n.name.toLowerCase() === address.neighborhood.toLowerCase());
+      if (!exists || address.city !== 'Belém') {
+        setAddress(prev => ({
+          ...prev,
+          neighborhood: neighborhoods[0].name,
+          city: neighborhoods[0].city || 'Belém',
+        }));
+      }
+    }
+  }, [neighborhoods]);
 
   // Available barbers who cover the selected neighborhood
   const availableBarbersForNeighborhood = barbers.filter(barber =>

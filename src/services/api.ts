@@ -20,6 +20,16 @@ export const api = {
     return [];
   },
 
+  async getNeighborhoods(): Promise<NeighborhoodItem[]> {
+    try {
+      const res = await fetch('/api/neighborhoods');
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Falha na requisição /api/neighborhoods, usando local:', e);
+    }
+    return [];
+  },
+
   async saveBarber(barber: Barber): Promise<Barber> {
     try {
       const res = await fetch('/api/barbers', {

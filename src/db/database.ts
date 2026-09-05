@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { INITIAL_NEIGHBORHOODS, INITIAL_BARBERS } from '../data/initialData.ts';
 const { Pool } = pg;
 
 // Connect to existing PostgreSQL or fallback to local in-memory if no DATABASE_URL
@@ -74,7 +75,33 @@ export async function initDb() {
         city VARCHAR(100) DEFAULT 'Belém'
       );
     `);
-    console.log('🗄️ Tabelas PostgreSQL (barbers, appointments, neighborhoods) verificadas com sucesso.');
+
+    // Migração automática para Belém: caso o banco já tenha registros antigos de São Paulo
+    await client.query(`
+      UPDATE barbers SET city = 'Belém' WHERE city ILIKE '%paulo%' OR city ILIKE '%atendimento local%' OR city = '' OR city IS NULL;
+      UPDATE neighborhoods SET city = 'Belém' WHERE city ILIKE '%paulo%' OR city ILIKE '%atendimento local%' OR city = '' OR city IS NULL;
+      DELETE FROM neighborhoods WHERE name IN ('Pinheiros', 'Jardins', 'Vila Madalena', 'Perdizes', 'Itaim Bibi', 'Moema', 'Vila Mariana', 'Brooklin', 'Morumbi', 'Santana', 'Tucuruvi', 'Tatuapé', 'Mooca', 'Anália Franco', 'Centro');
+    `);
+
+    // Insere os bairros de Belém caso a tabela esteja vazia ou sem os bairros oficiais
+    for (const n of INITIAL_NEIGHBORHOODS) {
+      await client.query(
+        `INSERT INTO neighborhoods (name, region, city)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (name) DO UPDATE SET region = EXCLUDED.region, city = EXCLUDED.city`,
+        [n.name, n.region, n.city]
+      );
+    }
+
+    // Se os barbeiros no banco ainda tiverem bairros antigos de SP, atualiza com os de Belém
+    for (const b of INITIAL_BARBERS) {
+      await client.query(
+        `UPDATE barbers SET neighborhoods = $1, city = 'Belém' WHERE id = $2`,
+        [JSON.stringify(b.neighborhoods), b.id]
+      );
+    }
+
+    console.log('🗄️ Tabelas PostgreSQL verificadas e sincronizadas para Belém-PA com sucesso.');
   } catch (err) {
     console.error('⚠️ Erro ao inicializar tabelas PostgreSQL:', err);
   } finally {

@@ -21,38 +21,98 @@ interface BarberNowContextType {
   resetDemoData: () => void;
 }
 
-const STORAGE_KEY_BARBERS = 'barber_now_barbers_v1';
-const STORAGE_KEY_APPOINTMENTS = 'barber_now_appointments_v1';
-const STORAGE_KEY_NEIGHBORHOODS = 'barber_now_neighborhoods_v1';
+const LEGACY_STORAGE_KEYS = [
+  'barber_now_barbers_v1',
+  'barber_now_appointments_v1',
+  'barber_now_neighborhoods_v1',
+];
+
+const STORAGE_KEY_BARBERS = 'barber_now_barbers_belem_v2';
+const STORAGE_KEY_APPOINTMENTS = 'barber_now_appointments_belem_v2';
+const STORAGE_KEY_NEIGHBORHOODS = 'barber_now_neighborhoods_belem_v2';
+
+function cleanLegacyStorage() {
+  try {
+    for (const key of LEGACY_STORAGE_KEYS) {
+      localStorage.removeItem(key);
+    }
+  } catch {
+    // Ignore error
+  }
+}
+
+// Immediate run at module load
+cleanLegacyStorage();
+
+function isFromOldSpOrInvalid(city?: string, neighborhoodName?: string): boolean {
+  if (!city && !neighborhoodName) return false;
+  if (city) {
+    const c = city.toLowerCase().trim();
+    if (c.includes('paulo') || c.includes('sp') || c.includes('atendimento local') || c !== 'belém') {
+      return true;
+    }
+  }
+  if (neighborhoodName) {
+    const n = neighborhoodName.toLowerCase().trim();
+    if (['pinheiros', 'jardins', 'vila madalena', 'perdizes', 'itaim bibi', 'moema', 'santana', 'tatuapé', 'mooca'].includes(n)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 const BarberNowContext = createContext<BarberNowContextType | undefined>(undefined);
 
 export const BarberNowProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [barbers, setBarbers] = useState<Barber[]>(() => {
     try {
+      cleanLegacyStorage();
       const saved = localStorage.getItem(STORAGE_KEY_BARBERS);
-      return saved ? JSON.parse(saved) : INITIAL_BARBERS;
+      if (saved) {
+        const parsed: Barber[] = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const hasInvalid = parsed.some(b => isFromOldSpOrInvalid(b.city) || (b.neighborhoods && b.neighborhoods.some(nb => isFromOldSpOrInvalid('', nb))));
+          if (!hasInvalid) return parsed;
+        }
+      }
     } catch {
-      return INITIAL_BARBERS;
+      // fallback
     }
+    return INITIAL_BARBERS;
   });
 
   const [appointments, setAppointments] = useState<Appointment[]>(() => {
     try {
+      cleanLegacyStorage();
       const saved = localStorage.getItem(STORAGE_KEY_APPOINTMENTS);
-      return saved ? JSON.parse(saved) : INITIAL_APPOINTMENTS;
+      if (saved) {
+        const parsed: Appointment[] = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const hasInvalid = parsed.some(a => isFromOldSpOrInvalid(a.address?.city, a.address?.neighborhood));
+          if (!hasInvalid) return parsed;
+        }
+      }
     } catch {
-      return INITIAL_APPOINTMENTS;
+      // fallback
     }
+    return INITIAL_APPOINTMENTS;
   });
 
   const [neighborhoods, setNeighborhoods] = useState<NeighborhoodItem[]>(() => {
     try {
+      cleanLegacyStorage();
       const saved = localStorage.getItem(STORAGE_KEY_NEIGHBORHOODS);
-      return saved ? JSON.parse(saved) : INITIAL_NEIGHBORHOODS;
+      if (saved) {
+        const parsed: NeighborhoodItem[] = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const hasInvalid = parsed.some(n => isFromOldSpOrInvalid(n.city, n.name) || n.city !== 'Belém');
+          if (!hasInvalid) return parsed;
+        }
+      }
     } catch {
-      return INITIAL_NEIGHBORHOODS;
+      // fallback
     }
+    return INITIAL_NEIGHBORHOODS;
   });
 
   const [currentView, setCurrentView] = useState<'client' | 'barber_agenda' | 'barber_register'>('client');
@@ -64,12 +124,34 @@ export const BarberNowProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     let isMounted = true;
     api.getBarbers().then(remoteBarbers => {
       if (isMounted && remoteBarbers && remoteBarbers.length > 0) {
-        setBarbers(remoteBarbers);
+        const hasInvalid = remoteBarbers.some(b => isFromOldSpOrInvalid(b.city) || (b.neighborhoods && b.neighborhoods.some(nb => isFromOldSpOrInvalid('', nb))));
+        if (!hasInvalid) {
+          setBarbers(remoteBarbers);
+        } else {
+          // Se o banco ainda tinha registros com SP, sobrescreve e sincroniza com os dados corretos de Belém
+          setBarbers(INITIAL_BARBERS);
+          INITIAL_BARBERS.forEach(b => api.saveBarber(b));
+        }
       }
     });
     api.getAppointments().then(remoteApts => {
       if (isMounted && remoteApts && remoteApts.length > 0) {
-        setAppointments(remoteApts);
+        const hasInvalid = remoteApts.some(a => isFromOldSpOrInvalid(a.address?.city, a.address?.neighborhood));
+        if (!hasInvalid) {
+          setAppointments(remoteApts);
+        } else {
+          setAppointments(INITIAL_APPOINTMENTS);
+        }
+      }
+    });
+    api.getNeighborhoods().then(remoteNeighborhoods => {
+      if (isMounted && remoteNeighborhoods && remoteNeighborhoods.length > 0) {
+        const hasInvalid = remoteNeighborhoods.some(n => isFromOldSpOrInvalid(n.city, n.name) || n.city !== 'Belém');
+        if (!hasInvalid) {
+          setNeighborhoods(remoteNeighborhoods);
+        } else {
+          setNeighborhoods(INITIAL_NEIGHBORHOODS);
+        }
       }
     });
     return () => {
@@ -151,13 +233,15 @@ export const BarberNowProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const resetDemoData = () => {
+    cleanLegacyStorage();
+    localStorage.removeItem(STORAGE_KEY_BARBERS);
+    localStorage.removeItem(STORAGE_KEY_APPOINTMENTS);
+    localStorage.removeItem(STORAGE_KEY_NEIGHBORHOODS);
     setBarbers(INITIAL_BARBERS);
     setAppointments(INITIAL_APPOINTMENTS);
     setNeighborhoods(INITIAL_NEIGHBORHOODS);
     setSelectedBarberId(INITIAL_BARBERS[0].id);
-    localStorage.removeItem(STORAGE_KEY_BARBERS);
-    localStorage.removeItem(STORAGE_KEY_APPOINTMENTS);
-    localStorage.removeItem(STORAGE_KEY_NEIGHBORHOODS);
+    INITIAL_BARBERS.forEach(b => api.saveBarber(b));
   };
 
   return (

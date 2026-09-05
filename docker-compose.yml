@@ -1,5 +1,7 @@
-# docker-compose.yml para a pasta /home/ec2-user/barber-now
-# Conecta diretamente na mesma rede do seu PostgreSQL existente (app_default)
+# docker-compose.yml para a pasta /home/ec2-user/app_barbernow
+# Conecta diretamente na mesma rede do PostgreSQL existente (app_default)
+# IMPORTANTE: NÃO ALTERAR o nome do banco (barbernow) nem o usuário (barbernow_user)
+# Esse banco e usuário já foram criados manualmente no container algodoal-postgres
 
 services:
   barber-now-app:
@@ -13,11 +15,13 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      # Conecta ao seu PostgreSQL já existente (algodoal-postgres) no banco barber_db
-      - DATABASE_URL=postgresql://postgres:postgres@algodoal-postgres:5432/barber_db
+      # Conecta ao PostgreSQL já existente (algodoal-postgres) no banco barbernow
+      - DATABASE_URL=postgresql://barbernow_user:senha_forte_aqui@algodoal-postgres:5432/barbernow
     networks:
       - app_default
+    mem_limit: 200m
+    mem_reservation: 100m
 
 networks:
   app_default:
-    external: true  # Usa a rede Docker já existente no seu servidor
+    external: true  # Usa a rede Docker já existente no servidor

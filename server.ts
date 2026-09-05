@@ -196,6 +196,21 @@ async function startServer() {
     return res.json({ id, status });
   });
 
+  // GET Neighborhoods
+  app.get('/api/neighborhoods', async (req, res) => {
+    if (pool) {
+      try {
+        const { rows } = await pool.query('SELECT name, region, city FROM neighborhoods ORDER BY id ASC');
+        if (rows.length > 0) {
+          return res.json(rows);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar bairros:', err);
+      }
+    }
+    return res.json(INITIAL_NEIGHBORHOODS);
+  });
+
   // Vite Middleware para Dev e Static para Produção
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
