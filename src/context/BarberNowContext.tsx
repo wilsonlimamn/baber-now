@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Barber, Appointment, NeighborhoodItem, AppointmentStatus } from '../types.ts';
-import { INITIAL_BARBERS, INITIAL_APPOINTMENTS, INITIAL_NEIGHBORHOODS } from '../data/initialData.ts';
+import { Barber, Appointment, NeighborhoodItem, AppointmentStatus, User, UserRole } from '../types.ts';
+import { INITIAL_BARBERS, INITIAL_APPOINTMENTS, INITIAL_NEIGHBORHOODS, INITIAL_USERS, DEFAULT_SERVICES } from '../data/initialData.ts';
 import { api } from '../services/api.ts';
 
 interface BarberNowContextType {
@@ -17,6 +17,25 @@ interface BarberNowContextType {
   updateBarberNeighborhoods: (barberId: string, neighborhoods: string[]) => void;
   addNeighborhood: (name: string, region: string, city: string) => void;
   resetDemoData: () => void;
+
+  // Autenticação & Sessão
+  currentUser: User | null;
+  users: User[];
+  isAuthModalOpen: boolean;
+  authModalTab: 'login' | 'register_client' | 'register_barber';
+  openAuthModal: (tab?: 'login' | 'register_client' | 'register_barber') => void;
+  closeAuthModal: () => void;
+  login: (email: string, password?: string, role?: UserRole) => Promise<{ success: boolean; error?: string }>;
+  registerUser: (data: {
+    name: string;
+    email: string;
+    password?: string;
+    role: UserRole;
+    phone?: string;
+    defaultNeighborhood?: string;
+    neighborhoods?: string[];
+  }) => Promise<{ success: boolean; error?: string }>;
+  logout: () => void;
 }
 
 const LEGACY_STORAGE_KEYS = [
@@ -115,6 +134,35 @@ export const BarberNowProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const [currentView, setCurrentView] = useState<'client' | 'barber_agenda' | 'barber_register'>('client');
   const [selectedBarberId, setSelectedBarberId] = useState<string>(INITIAL_BARBERS[0]?.id || 'b1');
+
+  // Estado de Autenticação
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    try {
+      const saved = localStorage.getItem('barber_now_current_user_v1');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  });
+
+  const [users, setUsers] = useState<User[]>(() => {
+    try {
+      const saved = localStorage.getItem('barber_now_users_v1');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_USERS;
+  });
+
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalTab, setAuthModalTab] = useState<'login' | 'register_client' | 'register_barber'>('login');
+
+  const openAuthModal = (tab: 'login' | 'register_client' | 'register_barber' = 'login') => {
+    setAuthModalTab(tab);
+    setIsAuthModalOpen(true);
+  };
+
+  const closeAuthModal = () => {
+    setIsAuthModalOpen(false);
+  };
 
   // Busca dados remotos do PostgreSQL no primeiro carregamento
   useEffect(() => {
@@ -229,14 +277,141 @@ export const BarberNowProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  useEffect(() => {
+    try {
+      if (currentUser) {
+        localStorage.setItem('barber_now_current_user_v1', JSON.stringify(currentUser));
+      } else {
+        localStorage.removeItem('barber_now_current_user_v1');
+      }
+    } catch (e) {
+      console.error('Error persisting currentUser', e);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('barber_now_users_v1', JSON.stringify(users));
+    } catch (e) {
+      console.error('Error persisting users', e);
+    }
+  }, [users]);
+
+  const login = async (email: string, password?: string, role?: UserRole): Promise<{ success: boolean; error?: string }> => {
+    const cleanEmail = email.trim().toLowerCase();
+    
+    // Tenta primeiro API backend
+    const apiRes = await api.login(cleanEmail, password, role);
+    if (apiRes.success && apiRes.user) {
+      setCurrentUser(apiRes.user);
+      if (apiRes.user.role === 'barber' && apiRes.user.barberId) {
+        setSelectedBarberId(apiRes.user.barberId);
+        setCurrentView('barber_agenda');
+      } else if (apiRes.user.role === 'client') {
+        setCurrentView('client');
+      }
+      setIsAuthModalOpen(false);
+      return { success: true };
+    }
+
+    // Fallback local nos users
+    const matched = users.find(u => u.email.toLowerCase() === cleanEmail && (!role || u.role === role));
+    if (matched) {
+      setCurrentUser(matched);
+      if (matched.role === 'barber' && matched.barberId) {
+        setSelectedBarberId(matched.barberId);
+        setCurrentView('barber_agenda');
+      } else if (matched.role === 'client') {
+        setCurrentView('client');
+      }
+      setIsAuthModalOpen(false);
+      return { success: true };
+    }
+
+    return { success: false, error: apiRes.error || 'Usuário não encontrado. Realize seu pré-cadastro gratuito.' };
+  };
+
+  const registerUser = async (data: {
+    name: string;
+    email: string;
+    password?: string;
+    role: UserRole;
+    phone?: string;
+    defaultNeighborhood?: string;
+    neighborhoods?: string[];
+  }): Promise<{ success: boolean; error?: string }> => {
+    const cleanEmail = data.email.trim().toLowerCase();
+
+    // Se for barbeiro, cria também perfil de Barbeiro se não tiver
+    let createdBarberId: string | undefined;
+    if (data.role === 'barber') {
+      createdBarberId = registerBarber({
+        name: data.name.trim(),
+        avatar: 'https://images.unsplash.com/photo-1503443207922-dff7d543fd0e?w=300&auto=format&fit=crop&q=80',
+        phone: data.phone || '(91) 98000-0000',
+        experienceYears: 2,
+        bio: 'Barbeiro profissional parceiro Barber-Now em Belém.',
+        neighborhoods: data.neighborhoods && data.neighborhoods.length > 0 ? data.neighborhoods : ['Nazaré', 'Umarizal', 'Marco'],
+        services: DEFAULT_SERVICES,
+        workingHours: { start: '08:00', end: '20:00' },
+        availableDays: [1, 2, 3, 4, 5, 6],
+        status: 'available',
+        city: 'Belém',
+      });
+    }
+
+    // Tenta chamada no servidor
+    const apiRes = await api.register({
+      ...data,
+      email: cleanEmail,
+    });
+
+    const newUser: User = apiRes.user || {
+      id: `u_${Date.now()}`,
+      name: data.name.trim(),
+      email: cleanEmail,
+      role: data.role,
+      phone: data.phone,
+      defaultNeighborhood: data.defaultNeighborhood,
+      barberId: createdBarberId,
+      city: 'Belém',
+      createdAt: new Date().toISOString(),
+    };
+
+    setUsers(prev => {
+      const filtered = prev.filter(u => u.email.toLowerCase() !== cleanEmail);
+      return [...filtered, newUser];
+    });
+
+    setCurrentUser(newUser);
+
+    if (newUser.role === 'barber' && newUser.barberId) {
+      setSelectedBarberId(newUser.barberId);
+      setCurrentView('barber_agenda');
+    } else {
+      setCurrentView('client');
+    }
+
+    setIsAuthModalOpen(false);
+    return { success: true };
+  };
+
+  const logout = () => {
+    setCurrentUser(null);
+  };
+
   const resetDemoData = () => {
     cleanLegacyStorage();
     localStorage.removeItem(STORAGE_KEY_BARBERS);
     localStorage.removeItem(STORAGE_KEY_APPOINTMENTS);
     localStorage.removeItem(STORAGE_KEY_NEIGHBORHOODS);
+    localStorage.removeItem('barber_now_current_user_v1');
+    localStorage.removeItem('barber_now_users_v1');
     setBarbers(INITIAL_BARBERS);
     setAppointments(INITIAL_APPOINTMENTS);
     setNeighborhoods(INITIAL_NEIGHBORHOODS);
+    setUsers(INITIAL_USERS);
+    setCurrentUser(null);
     setSelectedBarberId(INITIAL_BARBERS[0].id);
     INITIAL_BARBERS.forEach(b => api.saveBarber(b));
   };
@@ -257,6 +432,16 @@ export const BarberNowProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         updateBarberNeighborhoods,
         addNeighborhood,
         resetDemoData,
+
+        currentUser,
+        users,
+        isAuthModalOpen,
+        authModalTab,
+        openAuthModal,
+        closeAuthModal,
+        login,
+        registerUser,
+        logout,
       }}
     >
       {children}

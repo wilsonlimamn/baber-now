@@ -1,5 +1,5 @@
 import pg from 'pg';
-import { INITIAL_NEIGHBORHOODS, INITIAL_BARBERS } from '../data/initialData.ts';
+import { INITIAL_NEIGHBORHOODS, INITIAL_BARBERS, INITIAL_USERS } from '../data/initialData.ts';
 const { Pool } = pg;
 
 // Connect to existing PostgreSQL or fallback to local in-memory if no DATABASE_URL
@@ -55,7 +55,8 @@ export async function initDb() {
         barber_phone VARCHAR(50),
         barber_avatar TEXT,
         client_name VARCHAR(255) NOT NULL,
-        client_phone VARCHAR(50) NOT NULL,
+        client_phone VARCHAR(100),
+        client_email VARCHAR(255),
         address JSONB NOT NULL,
         service_id VARCHAR(64),
         service_name VARCHAR(255),
@@ -74,7 +75,30 @@ export async function initDb() {
         region VARCHAR(100) NOT NULL,
         city VARCHAR(100) DEFAULT 'Belém'
       );
+
+      CREATE TABLE IF NOT EXISTS users (
+        id VARCHAR(64) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL DEFAULT '123456',
+        role VARCHAR(20) NOT NULL,
+        phone VARCHAR(50),
+        default_neighborhood VARCHAR(100),
+        barber_id VARCHAR(64),
+        city VARCHAR(100) DEFAULT 'Belém',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
     `);
+
+    // Migração de colunas adicionais para appointments
+    try {
+      await client.query(`
+        ALTER TABLE appointments ADD COLUMN IF NOT EXISTS client_email VARCHAR(255);
+        ALTER TABLE appointments ALTER COLUMN client_phone DROP NOT NULL;
+      `);
+    } catch (colErr) {
+      console.log('Coluna client_email já verificada ou erro não crítico:', colErr);
+    }
 
     // Migração automática para Belém: caso o banco já tenha registros antigos de São Paulo
     await client.query(`
@@ -98,6 +122,16 @@ export async function initDb() {
       await client.query(
         `UPDATE barbers SET neighborhoods = $1, city = 'Belém' WHERE id = $2`,
         [JSON.stringify(b.neighborhoods), b.id]
+      );
+    }
+
+    // Insere os usuários iniciais caso não existam
+    for (const u of INITIAL_USERS) {
+      await client.query(
+        `INSERT INTO users (id, name, email, password, role, phone, default_neighborhood, barber_id, city)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         ON CONFLICT (email) DO NOTHING`,
+        [u.id, u.name, u.email, '123456', u.role, u.phone || null, u.defaultNeighborhood || null, u.barberId || null, u.city || 'Belém']
       );
     }
 

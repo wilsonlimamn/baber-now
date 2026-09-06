@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, UserCheck, Clock, Sparkles } from 'lucide-react';
+import { Calendar, UserCheck, Clock, Sparkles, LogIn, LogOut, User as UserIcon, Scissors } from 'lucide-react';
 import { useBarberNow } from '../context/BarberNowContext.tsx';
 
 interface HeaderProps {
@@ -11,9 +11,17 @@ export const Header: React.FC<HeaderProps> = ({ onOpenClientAppointments }) => {
     currentView,
     setCurrentView,
     appointments,
+    currentUser,
+    openAuthModal,
+    logout,
   } = useBarberNow();
 
-  const pendingCount = appointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length;
+  // Se o usuário logado for barbeiro, conta pendências dele
+  const relevantAppointments = currentUser?.role === 'barber' && currentUser.barberId
+    ? appointments.filter(a => a.barberId === currentUser.barberId)
+    : appointments;
+
+  const pendingCount = relevantAppointments.filter(a => a.status === 'pending').length;
 
   return (
     <header className="sticky top-0 z-40 bg-slate-900 text-white border-b border-slate-800 shadow-md w-full max-w-full">
@@ -69,17 +77,23 @@ export const Header: React.FC<HeaderProps> = ({ onOpenClientAppointments }) => {
               }`}
             >
               <Calendar className="w-3.5 h-3.5" />
-              <span>Agenda Barbeiro</span>
+              <span>Dashboard Barbeiro</span>
               {pendingCount > 0 && (
-                <span className="ml-1 px-1.5 py-0.2 rounded-full bg-red-500 text-white text-[10px] font-bold">
-                  {pendingCount}
+                <span className="ml-1 px-1.5 py-0.2 rounded-full bg-red-500 text-white text-[10px] font-bold animate-pulse">
+                  {pendingCount} a aprovar
                 </span>
               )}
             </button>
 
             <button
               id="nav-tab-register-barber-desktop"
-              onClick={() => setCurrentView('barber_register')}
+              onClick={() => {
+                if (!currentUser) {
+                  openAuthModal('register_barber');
+                } else {
+                  setCurrentView('barber_register');
+                }
+              }}
               className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-medium transition cursor-pointer ${
                 currentView === 'barber_register'
                   ? 'bg-blue-600 text-white shadow-sm font-semibold'
@@ -104,6 +118,60 @@ export const Header: React.FC<HeaderProps> = ({ onOpenClientAppointments }) => {
               <span className="hidden sm:inline">Meus Pedidos</span>
               <span className="sm:hidden text-[11px]">Pedidos</span>
             </button>
+
+            {/* Auth Button or User Profile Pill */}
+            {currentUser ? (
+              <div className="flex items-center gap-1.5 bg-slate-800 border border-slate-700 rounded-xl p-1 pl-2">
+                <button
+                  id="btn-user-profile-header"
+                  onClick={() => {
+                    if (currentUser.role === 'barber') {
+                      setCurrentView('barber_agenda');
+                    } else {
+                      onOpenClientAppointments();
+                    }
+                  }}
+                  className="flex items-center gap-1.5 text-xs text-slate-200 hover:text-white transition cursor-pointer"
+                  title="Acessar painel"
+                >
+                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-[11px] text-white ${
+                    currentUser.role === 'barber' ? 'bg-amber-600' : 'bg-blue-600'
+                  }`}>
+                    {currentUser.role === 'barber' ? (
+                      <Scissors className="w-3.5 h-3.5" />
+                    ) : (
+                      <UserIcon className="w-3.5 h-3.5" />
+                    )}
+                  </div>
+                  <div className="text-left hidden sm:block">
+                    <span className="font-semibold block leading-none truncate max-w-[100px]">
+                      {currentUser.name.split(' ')[0]}
+                    </span>
+                    <span className="text-[10px] text-slate-400 capitalize">
+                      {currentUser.role === 'barber' ? 'Barbeiro' : 'Cliente'}
+                    </span>
+                  </div>
+                </button>
+
+                <button
+                  id="btn-logout-header"
+                  onClick={logout}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-700/60 transition cursor-pointer"
+                  title="Sair da conta"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                id="btn-open-login-header"
+                onClick={() => openAuthModal('login')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition cursor-pointer shadow-sm"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Entrar</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -133,9 +201,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenClientAppointments }) => {
               }`}
             >
               <Calendar className="w-3 h-3 shrink-0" />
-              <span className="truncate">Agenda</span>
+              <span className="truncate">Dashboard</span>
               {pendingCount > 0 && (
-                <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center shrink-0">
+                <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center shrink-0 animate-pulse">
                   {pendingCount}
                 </span>
               )}
@@ -143,7 +211,13 @@ export const Header: React.FC<HeaderProps> = ({ onOpenClientAppointments }) => {
 
             <button
               id="nav-tab-register-barber-mobile"
-              onClick={() => setCurrentView('barber_register')}
+              onClick={() => {
+                if (!currentUser) {
+                  openAuthModal('register_barber');
+                } else {
+                  setCurrentView('barber_register');
+                }
+              }}
               className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-lg font-medium transition cursor-pointer ${
                 currentView === 'barber_register'
                   ? 'bg-blue-600 text-white shadow-xs font-semibold'
@@ -159,3 +233,4 @@ export const Header: React.FC<HeaderProps> = ({ onOpenClientAppointments }) => {
     </header>
   );
 };
+

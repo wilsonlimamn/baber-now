@@ -1,4 +1,4 @@
-import { Barber, NeighborhoodItem, Appointment, ServiceItem } from '../types.ts';
+import { Barber, NeighborhoodItem, Appointment, ServiceItem, User } from '../types.ts';
 
 export const DEFAULT_SERVICES: ServiceItem[] = [
   {
@@ -152,10 +152,9 @@ export const INITIAL_APPOINTMENTS: Appointment[] = [
     id: 'apt-101',
     barberId: 'b1',
     barberName: 'Lucas "Navalha" Silva',
-    barberPhone: '(91) 98765-4321',
     barberAvatar: 'https://images.unsplash.com/photo-1503443207922-dff7d543fd0e?w=300&auto=format&fit=crop&q=80',
     clientName: 'Eduardo Ribeiro',
-    clientPhone: '(91) 99123-4567',
+    clientEmail: 'eduardo.ribeiro@email.com',
     address: {
       street: 'Av. Governador José Malcher',
       number: '815',
@@ -178,10 +177,9 @@ export const INITIAL_APPOINTMENTS: Appointment[] = [
     id: 'apt-102',
     barberId: 'b1',
     barberName: 'Lucas "Navalha" Silva',
-    barberPhone: '(91) 98765-4321',
     barberAvatar: 'https://images.unsplash.com/photo-1503443207922-dff7d543fd0e?w=300&auto=format&fit=crop&q=80',
     clientName: 'Marcelo Costa',
-    clientPhone: '(91) 98877-6655',
+    clientEmail: 'marcelo.costa@email.com',
     address: {
       street: 'Travessa Padre Eutíquio',
       number: '1070',
@@ -204,10 +202,9 @@ export const INITIAL_APPOINTMENTS: Appointment[] = [
     id: 'apt-103',
     barberId: 'b1',
     barberName: 'Lucas "Navalha" Silva',
-    barberPhone: '(91) 98765-4321',
     barberAvatar: 'https://images.unsplash.com/photo-1503443207922-dff7d543fd0e?w=300&auto=format&fit=crop&q=80',
     clientName: 'Felipe Alencar',
-    clientPhone: '(91) 97711-2233',
+    clientEmail: 'felipe.alencar@email.com',
     address: {
       street: 'Av. Visconde de Souza Franco',
       number: '560',
@@ -230,10 +227,9 @@ export const INITIAL_APPOINTMENTS: Appointment[] = [
     id: 'apt-104',
     barberId: 'b2',
     barberName: 'Rodrigo Fontes',
-    barberPhone: '(91) 97654-3210',
     barberAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
     clientName: 'Thiago Martins',
-    clientPhone: '(91) 96655-4433',
+    clientEmail: 'thiago.martins@email.com',
     address: {
       street: 'Rua dos Mundurucus',
       number: '2450',
@@ -253,3 +249,43 @@ export const INITIAL_APPOINTMENTS: Appointment[] = [
     createdAt: new Date().toISOString(),
   }
 ];
+
+export const INITIAL_USERS: User[] = [
+  {
+    id: 'u-barber-1',
+    name: 'Lucas "Navalha" Silva',
+    email: 'lucas@barbernow.com',
+    role: 'barber',
+    phone: '(91) 98111-2233',
+    barberId: 'b1',
+    city: 'Belém',
+  },
+  {
+    id: 'u-barber-2',
+    name: 'Rodrigo Fontes',
+    email: 'rodrigo@barbernow.com',
+    role: 'barber',
+    phone: '(91) 98222-3344',
+    barberId: 'b2',
+    city: 'Belém',
+  },
+  {
+    id: 'u-client-1',
+    name: 'Carlos Eduardo',
+    email: 'carlos@email.com',
+    role: 'client',
+    phone: '(91) 98444-5566',
+    defaultNeighborhood: 'Nazaré',
+    city: 'Belém',
+  },
+  {
+    id: 'u-client-2',
+    name: 'Rafael Mendes',
+    email: 'rafael@email.com',
+    role: 'client',
+    phone: '(91) 98555-6677',
+    defaultNeighborhood: 'Marco',
+    city: 'Belém',
+  },
+];
+

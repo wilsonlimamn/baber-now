@@ -1,4 +1,4 @@
-import { Barber, Appointment, NeighborhoodItem, AppointmentStatus } from '../types.ts';
+import { Barber, Appointment, NeighborhoodItem, AppointmentStatus, User, UserRole } from '../types.ts';
 
 export const api = {
   async getHealth() {
@@ -77,6 +77,99 @@ export const api = {
       });
     } catch (e) {
       console.warn('Falha ao atualizar status no servidor:', e);
+    }
+  },
+
+  async login(email: string, password?: string, role?: UserRole): Promise<{ success: boolean; user?: User; error?: string }> {
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, role }),
+      });
+      const data = await res.json();
+      return data;
+    } catch (e) {
+      console.warn('Falha na requisição /api/auth/login:', e);
+      return { success: false, error: 'Falha de conexão com o servidor.' };
+    }
+  },
+
+  async register(userData: {
+    name: string;
+    email: string;
+    password?: string;
+    role: UserRole;
+    phone?: string;
+    defaultNeighborhood?: string;
+    neighborhoods?: string[];
+  }): Promise<{ success: boolean; user?: User; error?: string }> {
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      });
+      const data = await res.json();
+      return data;
+    } catch (e) {
+      console.warn('Falha na requisição /api/auth/register:', e);
+      return { success: false, error: 'Falha de conexão com o servidor.' };
+    }
+  },
+
+  async getUsers(): Promise<User[]> {
+    try {
+      const res = await fetch('/api/auth/users');
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Falha na requisição /api/auth/users:', e);
+    }
+    return [];
+  },
+
+  async getEmailStatus(): Promise<{
+    sender: string;
+    provider: string;
+    smtpConfigured: boolean;
+    system: string;
+    producedBy: string;
+    website: string;
+    note: string;
+  }> {
+    try {
+      const res = await fetch('/api/email/status');
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Falha ao verificar status de e-mail:', e);
+    }
+    return {
+      sender: 'site3facil@gmail.com',
+      provider: 'Gmail (3facil.com)',
+      smtpConfigured: false,
+      system: 'Barber-Now Belém',
+      producedBy: '3facil.com',
+      website: 'https://3facil.com',
+      note: 'Configurado para envio via site3facil@gmail.com',
+    };
+  },
+
+  async sendTestEmail(params: { to: string; type: 'registration' | 'booking' }): Promise<{
+    success: boolean;
+    message?: string;
+    target?: string;
+    error?: string;
+    details?: any;
+  }> {
+    try {
+      const res = await fetch('/api/email/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      return await res.json();
+    } catch (e: any) {
+      return { success: false, error: e?.message || 'Falha ao conectar com serviço de e-mail.' };
     }
   },
 };

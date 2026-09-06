@@ -2,7 +2,14 @@ import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { pool, initDb } from './src/db/database.ts';
-import { INITIAL_BARBERS, INITIAL_APPOINTMENTS, INITIAL_NEIGHBORHOODS } from './src/data/initialData.ts';
+import { INITIAL_BARBERS, INITIAL_APPOINTMENTS, INITIAL_NEIGHBORHOODS, INITIAL_USERS } from './src/data/initialData.ts';
+import {
+  SENDER_EMAIL,
+  isRealSmtpConfigured,
+  sendRegistrationConfirmationEmail,
+  sendBookingConfirmationEmail,
+  sendBookingStatusUpdateEmail,
+} from './src/services/emailService.ts';
 
 const PORT = 3000;
 
@@ -122,6 +129,7 @@ async function startServer() {
             barberPhone: r.barber_phone,
             barberAvatar: r.barber_avatar,
             clientName: r.client_name,
+            clientEmail: r.client_email || r.client_phone || 'cliente@barbernow.com',
             clientPhone: r.client_phone,
             address: r.address,
             serviceId: r.service_id,
@@ -146,23 +154,25 @@ async function startServer() {
   app.post('/api/appointments', async (req, res) => {
     const apt = req.body;
     const newId = apt.id || `apt_${Date.now()}`;
+    const emailToSave = apt.clientEmail || apt.clientPhone || 'cliente@barbernow.com';
 
     if (pool) {
       try {
         await pool.query(
           `INSERT INTO appointments (
             id, barber_id, barber_name, barber_phone, barber_avatar,
-            client_name, client_phone, address, service_id, service_name,
+            client_name, client_phone, client_email, address, service_id, service_name,
             price, duration_min, appointment_date, appointment_time, status, notes
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
           [
             newId,
             apt.barberId,
             apt.barberName,
-            apt.barberPhone,
+            apt.barberPhone || '',
             apt.barberAvatar,
             apt.clientName,
-            apt.clientPhone,
+            emailToSave,
+            emailToSave,
             JSON.stringify(apt.address),
             apt.serviceId,
             apt.serviceName,
@@ -178,7 +188,32 @@ async function startServer() {
         console.error('Erro ao salvar agendamento no PostgreSQL:', err);
       }
     }
-    return res.json({ id: newId, ...apt });
+
+    // Dispara e-mail de confirmação de agendamento via site3facil@gmail.com
+    let emailResult = null;
+    if (apt.clientEmail && apt.clientEmail.includes('@')) {
+      try {
+        emailResult = await sendBookingConfirmationEmail({
+          appointmentId: newId,
+          clientEmail: apt.clientEmail,
+          clientName: apt.clientName,
+          barberName: apt.barberName,
+          serviceName: apt.serviceName,
+          price: parseFloat(apt.price) || 0,
+          date: apt.date,
+          time: apt.time,
+          street: apt.address?.street || 'Rua',
+          number: apt.address?.number || 'S/N',
+          neighborhood: apt.address?.neighborhood || 'Belém',
+          city: apt.address?.city || 'Belém',
+          notes: apt.notes,
+        });
+      } catch (mailErr) {
+        console.warn('Aviso: Falha ao despachar e-mail de confirmação de agendamento:', mailErr);
+      }
+    }
+
+    return res.json({ id: newId, ...apt, emailConfirmation: emailResult });
   });
 
   // PATCH Appointment Status
@@ -186,14 +221,47 @@ async function startServer() {
     const { id } = req.params;
     const { status } = req.body;
 
+    let appointmentData: any = null;
+
     if (pool) {
       try {
-        await pool.query('UPDATE appointments SET status = $1 WHERE id = $2', [status, id]);
+        const updateRes = await pool.query(
+          'UPDATE appointments SET status = $1 WHERE id = $2 RETURNING *',
+          [status, id]
+        );
+        if (updateRes.rows.length > 0) {
+          appointmentData = updateRes.rows[0];
+        }
       } catch (err) {
         console.error('Erro ao atualizar status do agendamento:', err);
       }
     }
-    return res.json({ id, status });
+
+    // Se encontramos os dados do agendamento, envia e-mail de atualização para o cliente
+    let emailResult = null;
+    if (appointmentData && appointmentData.client_email && appointmentData.client_email.includes('@')) {
+      try {
+        const addressObj = typeof appointmentData.address === 'string'
+          ? JSON.parse(appointmentData.address)
+          : (appointmentData.address || {});
+
+        emailResult = await sendBookingStatusUpdateEmail({
+          appointmentId: id,
+          clientEmail: appointmentData.client_email,
+          clientName: appointmentData.client_name,
+          barberName: appointmentData.barber_name,
+          serviceName: appointmentData.service_name,
+          status,
+          date: appointmentData.appointment_date,
+          time: appointmentData.appointment_time,
+          neighborhood: addressObj?.neighborhood || 'Belém',
+        });
+      } catch (mailErr) {
+        console.warn('Aviso ao enviar e-mail de atualização de status:', mailErr);
+      }
+    }
+
+    return res.json({ id, status, emailNotification: emailResult });
   });
 
   // GET Neighborhoods
@@ -209,6 +277,251 @@ async function startServer() {
       }
     }
     return res.json(INITIAL_NEIGHBORHOODS);
+  });
+
+  // --- AUTH ROUTES ---
+
+  // POST /api/auth/register (Pré-cadastro de Cliente ou Barbeiro)
+  app.post('/api/auth/register', async (req, res) => {
+    const { name, email, password, role, phone, defaultNeighborhood, neighborhoods } = req.body;
+    if (!name || !email || !role) {
+      return res.status(400).json({ success: false, error: 'Nome, e-mail e tipo de perfil são obrigatórios.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const userId = `u-${Date.now().toString().slice(-6)}`;
+    let barberId: string | null = null;
+
+    if (role === 'barber') {
+      barberId = `b-${Date.now().toString().slice(-5)}`;
+      // Se for barbeiro, cria também o registro na tabela de barbeiros se conectado
+      if (pool) {
+        try {
+          await pool.query(
+            `INSERT INTO barbers (id, name, avatar, rating, reviews_count, phone, experience_years, bio, neighborhoods, services, working_hours, available_days, status, city)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+             ON CONFLICT (id) DO NOTHING`,
+            [
+              barberId,
+              name.trim(),
+              'https://images.unsplash.com/photo-1503443207922-dff7d543fd0e?w=300&auto=format&fit=crop&q=80',
+              5.0,
+              1,
+              phone?.trim() || '',
+              3,
+              'Barbeiro parceiro Barber-Now em Belém.',
+              JSON.stringify(neighborhoods || ['Nazaré', 'Umarizal']),
+              JSON.stringify([]),
+              JSON.stringify({ start: '08:00', end: '20:00' }),
+              JSON.stringify([1, 2, 3, 4, 5, 6]),
+              'available',
+              'Belém',
+            ]
+          );
+        } catch (bErr) {
+          console.error('Erro ao vincular barbeiro ao criar usuário:', bErr);
+        }
+      }
+    }
+
+    if (pool) {
+      try {
+        const check = await pool.query('SELECT * FROM users WHERE email = $1', [cleanEmail]);
+        if (check.rows.length > 0) {
+          return res.status(400).json({ success: false, error: 'Este e-mail já está cadastrado.' });
+        }
+
+        await pool.query(
+          `INSERT INTO users (id, name, email, password, role, phone, default_neighborhood, barber_id, city)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [
+            userId,
+            name.trim(),
+            cleanEmail,
+            password || '123456',
+            role,
+            phone?.trim() || null,
+            defaultNeighborhood || null,
+            barberId,
+            'Belém',
+          ]
+        );
+      } catch (err: any) {
+        console.error('Erro ao registrar usuário no banco:', err);
+        return res.status(500).json({ success: false, error: 'Erro ao salvar no banco de dados.' });
+      }
+    }
+
+    const newUser = {
+      id: userId,
+      name: name.trim(),
+      email: cleanEmail,
+      role,
+      phone: phone?.trim(),
+      defaultNeighborhood,
+      barberId: barberId || undefined,
+      city: 'Belém',
+    };
+
+    // Dispara e-mail de confirmação de cadastro via site3facil@gmail.com
+    let emailResult = null;
+    try {
+      emailResult = await sendRegistrationConfirmationEmail({
+        toEmail: cleanEmail,
+        name: name.trim(),
+        role: role as 'client' | 'barber',
+        password,
+        neighborhood: defaultNeighborhood,
+      });
+    } catch (mailErr) {
+      console.warn('Aviso: Falha ao enviar e-mail de confirmação de cadastro:', mailErr);
+    }
+
+    return res.json({ success: true, user: newUser, emailConfirmation: emailResult });
+  });
+
+  // --- ROTAS DE E-MAIL (site3facil@gmail.com / 3facil.com) ---
+
+  // GET /api/email/status (Verifica status do remetente e servidor SMTP)
+  app.get('/api/email/status', (req, res) => {
+    res.json({
+      sender: SENDER_EMAIL,
+      provider: 'Gmail (3facil.com)',
+      smtpConfigured: isRealSmtpConfigured(),
+      system: 'Barber-Now Belém',
+      producedBy: '3facil.com',
+      website: 'https://3facil.com',
+      note: isRealSmtpConfigured()
+        ? 'Serviço SMTP com credenciais ativas para site3facil@gmail.com'
+        : 'Remetente padrão configurado para site3facil@gmail.com (configure SMTP_PASS para envio externo direto)',
+    });
+  });
+
+  // POST /api/email/test (Dispara teste de envio imediato)
+  app.post('/api/email/test', async (req, res) => {
+    const { to, type = 'registration' } = req.body;
+    const targetEmail = to?.trim() || SENDER_EMAIL;
+
+    try {
+      let result;
+      if (type === 'booking') {
+        result = await sendBookingConfirmationEmail({
+          appointmentId: `teste-${Date.now()}`,
+          clientEmail: targetEmail,
+          clientName: 'Cliente Teste Belém',
+          barberName: 'Marcos Barbeiro (3facil.com)',
+          serviceName: 'Corte Degradê Navalhado + Barba',
+          price: 65.0,
+          date: new Date().toISOString().split('T')[0],
+          time: '14:30',
+          street: 'Av. Nazaré',
+          number: '120',
+          neighborhood: 'Nazaré',
+          city: 'Belém',
+          notes: 'Teste de disparo de e-mail de confirmação de agendamento.',
+        });
+      } else {
+        result = await sendRegistrationConfirmationEmail({
+          toEmail: targetEmail,
+          name: 'Usuário de Teste 3fácil',
+          role: 'client',
+          neighborhood: 'Umarizal',
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: `Disparo de teste realizado pelo remetente ${SENDER_EMAIL}`,
+        target: targetEmail,
+        producedBy: '3facil.com',
+        details: result,
+      });
+    } catch (err: any) {
+      console.error('Erro no teste de e-mail:', err);
+      return res.status(500).json({
+        success: false,
+        error: err?.message || 'Erro ao processar envio de teste.',
+      });
+    }
+  });
+
+  // POST /api/auth/login
+  app.post('/api/auth/login', async (req, res) => {
+    const { email, password, role } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Informe o e-mail.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (pool) {
+      try {
+        let query = 'SELECT * FROM users WHERE LOWER(email) = $1';
+        const params: any[] = [cleanEmail];
+        if (role) {
+          query += ' AND role = $2';
+          params.push(role);
+        }
+
+        const { rows } = await pool.query(query, params);
+        if (rows.length > 0) {
+          const u = rows[0];
+          return res.json({
+            success: true,
+            user: {
+              id: u.id,
+              name: u.name,
+              email: u.email,
+              role: u.role,
+              phone: u.phone,
+              defaultNeighborhood: u.default_neighborhood,
+              barberId: u.barber_id,
+              city: u.city || 'Belém',
+            },
+          });
+        }
+      } catch (err) {
+        console.error('Erro no login via banco:', err);
+      }
+    }
+
+    // Fallback para os usuários iniciais em memória
+    const foundInitial = INITIAL_USERS.find(
+      u => u.email.toLowerCase() === cleanEmail && (!role || u.role === role)
+    );
+
+    if (foundInitial) {
+      return res.json({ success: true, user: foundInitial });
+    }
+
+    return res.status(401).json({
+      success: false,
+      error: 'Usuário não encontrado com este e-mail. Faça seu pré-cadastro gratuito.',
+    });
+  });
+
+  // GET /api/auth/users
+  app.get('/api/auth/users', async (req, res) => {
+    if (pool) {
+      try {
+        const { rows } = await pool.query('SELECT id, name, email, role, phone, default_neighborhood, barber_id, city FROM users');
+        if (rows.length > 0) {
+          return res.json(rows.map(u => ({
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            role: u.role,
+            phone: u.phone,
+            defaultNeighborhood: u.default_neighborhood,
+            barberId: u.barber_id,
+            city: u.city,
+          })));
+        }
+      } catch (err) {
+        console.error('Erro ao buscar usuários:', err);
+      }
+    }
+    return res.json(INITIAL_USERS);
   });
 
   // Vite Middleware para Dev e Static para Produção

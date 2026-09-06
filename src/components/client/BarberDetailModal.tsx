@@ -102,10 +102,10 @@ export const BarberDetailModal: React.FC<BarberDetailModalProps> = ({
             </div>
 
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-2.5">
-              <Phone className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
               <div>
-                <span className="text-slate-400 font-semibold block text-[11px]">WhatsApp Direto</span>
-                <span className="text-slate-800 font-bold">{barber.phone}</span>
+                <span className="text-slate-400 font-semibold block text-[11px]">Canal de Atendimento</span>
+                <span className="text-slate-800 font-bold">Plataforma Barber-Now</span>
               </div>
             </div>
           </div>

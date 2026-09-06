@@ -58,7 +58,7 @@ export const BarberRegistrationForm: React.FC = () => {
     e.preventDefault();
 
     if (!name.trim() || !phone.trim()) {
-      alert('Por favor, preencha o nome e o WhatsApp do barbeiro.');
+      alert('Por favor, preencha o nome e o telefone de cadastro do barbeiro.');
       return;
     }
 
@@ -149,7 +149,7 @@ export const BarberRegistrationForm: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                WhatsApp de Contato <span className="text-blue-600">*</span>
+                Telefone para Cadastro na Plataforma <span className="text-blue-600">*</span>
               </label>
               <div className="relative">
                 <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -157,12 +157,13 @@ export const BarberRegistrationForm: React.FC = () => {
                   id="input-barber-phone"
                   type="tel"
                   required
-                  placeholder="Ex: (11) 99876-5432"
+                  placeholder="Ex: (91) 98765-4321"
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
                   className="w-full bg-white border border-slate-300 rounded-xl pl-10 pr-3.5 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 placeholder:text-slate-400"
                 />
               </div>
+              <p className="text-[10px] text-slate-500 mt-1">Uso administrativo interno. Não exibido diretamente a clientes.</p>
             </div>
 
             <div>

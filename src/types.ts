@@ -41,10 +41,11 @@ export interface Appointment {
   id: string;
   barberId: string;
   barberName: string;
-  barberPhone: string;
+  barberPhone?: string;
   barberAvatar: string;
   clientName: string;
-  clientPhone: string;
+  clientEmail: string;
+  clientPhone?: string;
   address: ClientAddress;
   serviceId: string;
   serviceName: string;
@@ -62,3 +63,18 @@ export interface NeighborhoodItem {
   region: string;
   city: string;
 }
+
+export type UserRole = 'client' | 'barber';
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  phone?: string;
+  defaultNeighborhood?: string;
+  barberId?: string; // Links to Barber profile when role === 'barber'
+  city: string;
+  createdAt?: string;
+}
+

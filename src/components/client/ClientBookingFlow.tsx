@@ -7,11 +7,10 @@ import {
   CheckCircle2,
   ChevronRight,
   User,
-  Phone,
+  Mail,
   Star,
   ShieldCheck,
   Sparkles,
-  MessageCircle,
   Home,
   AlertTriangle
 } from 'lucide-react';
@@ -27,7 +26,15 @@ interface ClientBookingFlowProps {
 }
 
 export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingSuccess }) => {
-  const { barbers, neighborhoods, addAppointment, setCurrentView, setSelectedBarberId } = useBarberNow();
+  const {
+    barbers,
+    neighborhoods,
+    addAppointment,
+    setCurrentView,
+    setSelectedBarberId,
+    currentUser,
+    openAuthModal,
+  } = useBarberNow();
 
   // Step state: 1 = Address, 2 = Date/Time & Service, 3 = Select Barber, 4 = Client Details & Confirm
   const [step, setStep] = useState<number>(1);
@@ -68,9 +75,17 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
   };
 
   // Client Identification
-  const [clientName, setClientName] = useState<string>('');
-  const [clientPhone, setClientPhone] = useState<string>('');
+  const [clientName, setClientName] = useState<string>(currentUser?.name || '');
+  const [clientEmail, setClientEmail] = useState<string>(currentUser?.email || '');
   const [clientNotes, setClientNotes] = useState<string>('');
+
+  // Auto pre-fill if user logs in
+  useEffect(() => {
+    if (currentUser) {
+      if (!clientName) setClientName(currentUser.name);
+      if (!clientEmail) setClientEmail(currentUser.email);
+    }
+  }, [currentUser]);
 
   // Success state
   const [completedAppointmentId, setCompletedAppointmentId] = useState<string | null>(null);
@@ -108,8 +123,13 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
       return;
     }
 
-    if (!clientName.trim() || !clientPhone.trim()) {
-      alert('Por favor, informe seu nome e telefone para contato.');
+    if (!clientName.trim() || !clientEmail.trim()) {
+      alert('Por favor, informe seu nome e e-mail para confirmação e acompanhamento.');
+      return;
+    }
+
+    if (!clientEmail.includes('@') || !clientEmail.includes('.')) {
+      alert('Por favor, informe um endereço de e-mail válido.');
       return;
     }
 
@@ -119,7 +139,8 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
       barberPhone: selectedBarber.phone,
       barberAvatar: selectedBarber.avatar,
       clientName: clientName.trim(),
-      clientPhone: clientPhone.trim(),
+      clientEmail: clientEmail.trim(),
+      clientPhone: clientEmail.trim(),
       address,
       serviceId: selectedService.id,
       serviceName: selectedService.name,
@@ -135,19 +156,6 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
     onBookingSuccess(newId);
   };
 
-  const handleOpenWhatsApp = () => {
-    if (!selectedBarber) return;
-    const cleanPhone = selectedBarber.phone.replace(/\D/g, '');
-    const message = encodeURIComponent(
-      `Olá ${selectedBarber.name}! Acabei de agendar um atendimento em domicílio pelo Barber-Now:\n\n` +
-      `✂️ Serviço: ${selectedService.name}\n` +
-      `📅 Data: ${selectedDate.split('-').reverse().join('/')} às ${selectedTime}\n` +
-      `📍 Endereço: ${address.street}, ${address.number} (${address.neighborhood})\n` +
-      `👤 Cliente: ${clientName}`
-    );
-    window.open(`https://wa.me/55${cleanPhone}?text=${message}`, '_blank');
-  };
-
   if (completedAppointmentId) {
     return (
       <div className="w-full max-w-2xl mx-auto py-4 sm:py-8 px-3 sm:px-4">
@@ -157,9 +165,25 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
           </div>
 
           <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">Solicitação Enviada com Sucesso!</h2>
-          <p className="text-slate-600 text-xs sm:text-sm max-w-md mx-auto mb-6">
-            O barbeiro <span className="font-semibold text-blue-600">{selectedBarber?.name}</span> já recebeu seu pedido na agenda e foi notificado para o atendimento em domicílio.
+          <p className="text-slate-600 text-xs sm:text-sm max-w-md mx-auto mb-5">
+            O barbeiro <span className="font-semibold text-blue-600">{selectedBarber?.name}</span> já recebeu seu pedido na agenda.
           </p>
+
+          {/* Email and Platform Notification Notice */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3.5 sm:p-4 text-left mb-6 flex items-start gap-3">
+            <Mail className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+            <div className="text-xs text-blue-900 space-y-1">
+              <p className="font-bold text-blue-950 flex items-center justify-between">
+                <span>Notificação Enviada por E-mail</span>
+                <span className="text-[10px] font-mono bg-blue-100/90 text-blue-800 px-2 py-0.5 rounded font-semibold">
+                  site3facil@gmail.com
+                </span>
+              </p>
+              <p className="text-blue-800 leading-relaxed">
+                Os detalhes e atualizações do seu corte foram enviados para <strong className="font-semibold text-blue-950">{clientEmail}</strong> diretamente pelo remetente oficial <strong>site3facil@gmail.com</strong> (sistema desenvolvido e produzido por <a href="https://3facil.com" target="_blank" rel="noopener noreferrer" className="underline font-bold text-blue-900 hover:text-blue-950">3facil.com</a>).
+              </p>
+            </div>
+          </div>
 
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 sm:p-4 text-left mb-6 space-y-2.5 text-xs sm:text-sm text-slate-700">
             <div className="flex justify-between items-center border-b border-slate-200 pb-2">
@@ -181,22 +205,17 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
                 {address.complement ? ` (${address.complement})` : ''}
               </span>
             </div>
-            <div className="flex justify-between items-center pt-1">
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500">E-mail do Cliente:</span>
+              <span className="font-medium text-slate-900">{clientEmail}</span>
+            </div>
+            <div className="flex justify-between items-center pt-1 border-t border-slate-200">
               <span className="text-slate-500">Barbeiro:</span>
               <span className="font-semibold text-slate-900">{selectedBarber?.name}</span>
             </div>
           </div>
 
           <div className="flex flex-col gap-2.5 sm:gap-3">
-            <button
-              id="btn-whatsapp-confirmation"
-              onClick={handleOpenWhatsApp}
-              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl font-semibold text-sm transition shadow-sm cursor-pointer"
-            >
-              <MessageCircle className="w-4 h-4" />
-              <span>Falar com Barbeiro no WhatsApp</span>
-            </button>
-
             <button
               id="btn-view-barber-agenda-check"
               onClick={() => {
@@ -879,7 +898,7 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
             <div>
               <h2 className="text-lg font-bold text-slate-900">Seus Dados e Confirmação</h2>
               <p className="text-xs text-slate-500">
-                Informe como o barbeiro pode falar com você e confirme o agendamento em domicílio.
+                Informe seu e-mail para receber as notificações e confirmação do atendimento pela plataforma.
               </p>
             </div>
           </div>
@@ -893,7 +912,7 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-700">
               <div>
                 <span className="text-slate-500 block">Barbeiro Selecionado:</span>
-                <span className="font-semibold text-slate-900">{selectedBarber?.name}</span> ({selectedBarber?.phone})
+                <span className="font-semibold text-slate-900">{selectedBarber?.name}</span>
               </div>
               <div>
                 <span className="text-slate-500 block">Serviço:</span>
@@ -913,6 +932,43 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
               </div>
             </div>
           </div>
+
+          {/* User Account / Pre-cadastro Prompt */}
+          {currentUser ? (
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-800">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>
+                  Conectado como <strong>{currentUser.name}</strong> ({currentUser.email})
+                </span>
+              </div>
+              <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md">
+                Conta Ativa
+              </span>
+            </div>
+          ) : (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-blue-900">
+              <span>
+                Já possui conta ou pré-cadastro no Barber-Now?
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => openAuthModal('login')}
+                  className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition cursor-pointer shadow-xs"
+                >
+                  Entrar na Conta
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openAuthModal('register_client')}
+                  className="px-3 py-1 rounded-lg bg-white border border-blue-300 hover:bg-blue-100 text-blue-800 font-semibold text-xs transition cursor-pointer"
+                >
+                  Pré-cadastrar
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Client Inputs */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -936,17 +992,17 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Seu WhatsApp / Telefone <span className="text-blue-600">*</span>
+                Seu E-mail <span className="text-blue-600">*</span>
               </label>
               <div className="relative">
-                <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
                 <input
-                  id="input-client-phone"
-                  type="tel"
+                  id="input-client-email"
+                  type="email"
                   required
-                  placeholder="Ex: (91) 98888-7777"
-                  value={clientPhone}
-                  onChange={e => setClientPhone(e.target.value)}
+                  placeholder="Ex: carlos.eduardo@email.com"
+                  value={clientEmail}
+                  onChange={e => setClientEmail(e.target.value)}
                   className="w-full bg-white border border-slate-300 rounded-xl pl-10 pr-3.5 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition placeholder:text-slate-400"
                 />
               </div>
@@ -964,6 +1020,11 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
                 onChange={e => setClientNotes(e.target.value)}
                 className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition placeholder:text-slate-400"
               />
+            </div>
+
+            <div className="sm:col-span-2 text-[11px] text-slate-500 flex items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
+              <span>Privacidade Barber-Now: O contato e as confirmações ocorrem estritamente via plataforma e por e-mail. Seus dados nunca são compartilhados.</span>
             </div>
           </div>
 

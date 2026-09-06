@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Clock, MapPin, Scissors, MessageCircle, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { X, Clock, MapPin, Scissors, Mail, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useBarberNow } from '../../context/BarberNowContext.tsx';
 import { AppointmentStatus } from '../../types.ts';
 
@@ -9,9 +9,14 @@ interface ClientAppointmentsDrawerProps {
 }
 
 export const ClientAppointmentsDrawer: React.FC<ClientAppointmentsDrawerProps> = ({ isOpen, onClose }) => {
-  const { appointments, updateAppointmentStatus } = useBarberNow();
+  const { appointments, updateAppointmentStatus, currentUser, openAuthModal } = useBarberNow();
 
   if (!isOpen) return null;
+
+  // Se o cliente estiver logado, prioriza pedidos vinculados ao email dele, senão exibe todos do dispositivo
+  const displayedAppointments = currentUser?.email
+    ? appointments.filter(a => a.clientEmail.toLowerCase() === currentUser.email.toLowerCase())
+    : appointments;
 
   const getStatusBadge = (status: AppointmentStatus) => {
     switch (status) {
@@ -67,18 +72,40 @@ export const ClientAppointmentsDrawer: React.FC<ClientAppointmentsDrawerProps> =
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
-          {appointments.length === 0 ? (
+          {/* User Account / Login Bar */}
+          {currentUser ? (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs flex items-center justify-between text-blue-900">
+              <div>
+                <span className="font-semibold block">{currentUser.name}</span>
+                <span className="text-[11px] text-blue-700">{currentUser.email}</span>
+              </div>
+              <span className="text-[10px] font-bold uppercase bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                Cliente
+              </span>
+            </div>
+          ) : (
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs flex items-center justify-between text-slate-700">
+              <span>Para salvar seu histórico:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  openAuthModal('login');
+                }}
+                className="text-xs font-semibold text-blue-600 hover:text-blue-700 underline cursor-pointer"
+              >
+                Entrar ou Cadastrar
+              </button>
+            </div>
+          )}
+
+          {displayedAppointments.length === 0 ? (
             <div className="text-center py-12 text-slate-400 text-sm">
               <p>Nenhum agendamento realizado ainda.</p>
               <p className="text-xs text-slate-500 mt-1">Preencha o formulário para agendar seu primeiro corte.</p>
             </div>
           ) : (
-            appointments.map(apt => {
-              const cleanPhone = apt.barberPhone.replace(/\D/g, '');
-              const whatsAppUrl = `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(
-                `Olá ${apt.barberName}! Gostaria de falar sobre o agendamento de ${apt.serviceName} marcado para ${apt.date.split('-').reverse().join('/')} às ${apt.time}.`
-              )}`;
-
+            displayedAppointments.map(apt => {
               return (
                 <div
                   key={apt.id}
@@ -120,15 +147,10 @@ export const ClientAppointmentsDrawer: React.FC<ClientAppointmentsDrawerProps> =
                   </div>
 
                   <div className="pt-2 flex items-center justify-between gap-2 border-t border-slate-100">
-                    <a
-                      href={whatsAppUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition shadow-xs"
-                    >
-                      <MessageCircle className="w-3.5 h-3.5" />
-                      <span>WhatsApp do Barbeiro</span>
-                    </a>
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                      <Mail className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                      <span>Notificações por e-mail</span>
+                    </div>
 
                     {apt.status !== 'cancelled' && apt.status !== 'completed' && (
                       <button
