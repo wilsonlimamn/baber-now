@@ -154,7 +154,11 @@ export const api = {
     };
   },
 
-  async sendTestEmail(params: { to: string; type: 'registration' | 'booking' }): Promise<{
+  async sendTestEmail(params: {
+    to: string;
+    type: 'registration' | 'booking';
+    customPassword?: string;
+  }): Promise<{
     success: boolean;
     message?: string;
     target?: string;
@@ -170,6 +174,23 @@ export const api = {
       return await res.json();
     } catch (e: any) {
       return { success: false, error: e?.message || 'Falha ao conectar com serviço de e-mail.' };
+    }
+  },
+
+  async saveEmailPassword(password: string): Promise<{
+    success: boolean;
+    message?: string;
+    error?: string;
+  }> {
+    try {
+      const res = await fetch('/api/email/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      return await res.json();
+    } catch (e: any) {
+      return { success: false, error: e?.message || 'Falha ao salvar senha de aplicativo.' };
     }
   },
 };

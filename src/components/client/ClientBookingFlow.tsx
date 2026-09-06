@@ -12,7 +12,10 @@ import {
   ShieldCheck,
   Sparkles,
   Home,
-  AlertTriangle
+  AlertTriangle,
+  ArrowLeft,
+  LogIn,
+  UserPlus
 } from 'lucide-react';
 import { useBarberNow } from '../../context/BarberNowContext.tsx';
 import { Barber, ServiceItem, ClientAddress } from '../../types.ts';
@@ -23,9 +26,13 @@ import { BelemCoverageMap } from '../common/BelemCoverageMap.tsx';
 
 interface ClientBookingFlowProps {
   onBookingSuccess: (appointmentId: string) => void;
+  onOpenClientAppointments?: () => void;
 }
 
-export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingSuccess }) => {
+export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({
+  onBookingSuccess,
+  onOpenClientAppointments,
+}) => {
   const {
     barbers,
     neighborhoods,
@@ -34,7 +41,12 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
     setSelectedBarberId,
     currentUser,
     openAuthModal,
+    appointments,
   } = useBarberNow();
+
+  // Se o usuário está no fluxo de agendamento ativo ou na vitrine inicial
+  const [isBookingActive, setIsBookingActive] = useState<boolean>(false);
+  const [pendingStartBooking, setPendingStartBooking] = useState<boolean>(false);
 
   // Step state: 1 = Address, 2 = Date/Time & Service, 3 = Select Barber, 4 = Client Details & Confirm
   const [step, setStep] = useState<number>(1);
@@ -60,18 +72,34 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
   // Barber Lightbox / Preview State
   const [previewBarber, setPreviewBarber] = useState<Barber | null>(null);
 
-  // Handle selecting a barber from the gallery on the home page
-  const handleSelectBarberFromGallery = (barber: Barber) => {
-    setSelectedBarber(barber);
-    setSelectedBarberId(barber.id);
+  // Handle starting the booking flow (requiring login or initiating wizard)
+  const handleStartBooking = (barber?: Barber) => {
+    if (barber) {
+      setSelectedBarber(barber);
+      setSelectedBarberId(barber.id);
 
-    // If current neighborhood isn't served by this barber, adapt neighborhood to barber's main one
-    const servesCurrent = barber.neighborhoods.some(
-      n => n.toLowerCase() === address.neighborhood.toLowerCase()
-    );
-    if (!servesCurrent && barber.neighborhoods.length > 0) {
-      setAddress(prev => ({ ...prev, neighborhood: barber.neighborhoods[0] }));
+      // If current neighborhood isn't served by this barber, adapt neighborhood to barber's main one
+      const servesCurrent = barber.neighborhoods.some(
+        n => n.toLowerCase() === address.neighborhood.toLowerCase()
+      );
+      if (!servesCurrent && barber.neighborhoods.length > 0) {
+        setAddress(prev => ({ ...prev, neighborhood: barber.neighborhoods[0] }));
+      }
     }
+
+    if (!currentUser) {
+      setPendingStartBooking(true);
+      openAuthModal('login');
+      return;
+    }
+
+    setIsBookingActive(true);
+    setStep(1);
+  };
+
+  // Handle selecting a barber from the gallery
+  const handleSelectBarberFromGallery = (barber: Barber) => {
+    handleStartBooking(barber);
   };
 
   // Client Identification
@@ -82,10 +110,20 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
   // Auto pre-fill if user logs in
   useEffect(() => {
     if (currentUser) {
-      if (!clientName) setClientName(currentUser.name);
-      if (!clientEmail) setClientEmail(currentUser.email);
+      setClientName(currentUser.name);
+      setClientEmail(currentUser.email);
+      if (currentUser.defaultNeighborhood) {
+        setAddress(prev => ({
+          ...prev,
+          neighborhood: currentUser.defaultNeighborhood || prev.neighborhood,
+        }));
+      }
+      if (pendingStartBooking) {
+        setIsBookingActive(true);
+        setPendingStartBooking(false);
+      }
     }
-  }, [currentUser]);
+  }, [currentUser, pendingStartBooking]);
 
   // Success state
   const [completedAppointmentId, setCompletedAppointmentId] = useState<string | null>(null);
@@ -118,18 +156,23 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
   const handleConfirmBooking = (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!currentUser) {
+      alert('Para confirmar seu agendamento, é necessário estar conectado à sua conta.');
+      openAuthModal('login');
+      return;
+    }
+
     if (!selectedBarber) {
       alert('Por favor, selecione um barbeiro disponível.');
       return;
     }
 
-    if (!clientName.trim() || !clientEmail.trim()) {
-      alert('Por favor, informe seu nome e e-mail para confirmação e acompanhamento.');
-      return;
-    }
+    const effectiveName = currentUser.name || clientName.trim();
+    const effectiveEmail = currentUser.email || clientEmail.trim();
+    const effectivePhone = currentUser.phone || '';
 
-    if (!clientEmail.includes('@') || !clientEmail.includes('.')) {
-      alert('Por favor, informe um endereço de e-mail válido.');
+    if (!effectiveName || !effectiveEmail || !effectiveEmail.includes('@') || !effectiveEmail.includes('.')) {
+      alert('Por favor, confirme seus dados para o agendamento.');
       return;
     }
 
@@ -138,9 +181,9 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
       barberName: selectedBarber.name,
       barberPhone: selectedBarber.phone,
       barberAvatar: selectedBarber.avatar,
-      clientName: clientName.trim(),
-      clientEmail: clientEmail.trim(),
-      clientPhone: clientEmail.trim(),
+      clientName: effectiveName,
+      clientEmail: effectiveEmail,
+      clientPhone: effectivePhone || effectiveEmail,
       address,
       serviceId: selectedService.id,
       serviceName: selectedService.name,
@@ -216,6 +259,17 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
           </div>
 
           <div className="flex flex-col gap-2.5 sm:gap-3">
+            {onOpenClientAppointments && (
+              <button
+                id="btn-view-client-appointments-success"
+                onClick={onOpenClientAppointments}
+                className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-bold text-sm transition shadow-sm cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                <span>Acompanhar em Meus Agendamentos</span>
+              </button>
+            )}
+
             <button
               id="btn-view-barber-agenda-check"
               onClick={() => {
@@ -236,10 +290,24 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
                 setCompletedAppointmentId(null);
                 setStep(1);
                 setSelectedBarber(null);
+                setIsBookingActive(true);
               }}
               className="w-full flex items-center justify-center gap-2 border border-slate-300 hover:bg-slate-100 text-slate-700 px-4 py-3 rounded-xl font-medium text-sm transition cursor-pointer"
             >
               Fazer Outro Agendamento
+            </button>
+
+            <button
+              type="button"
+              id="btn-back-home-after-booking"
+              onClick={() => {
+                setCompletedAppointmentId(null);
+                setIsBookingActive(false);
+                setStep(1);
+              }}
+              className="w-full text-center py-2 text-xs text-slate-500 hover:text-slate-800 font-semibold cursor-pointer underline"
+            >
+              ← Voltar para a Página Inicial
             </button>
           </div>
         </div>
@@ -247,86 +315,312 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
     );
   }
 
-  return (
-    <div className="w-full max-w-4xl mx-auto py-4 sm:py-6 px-3 sm:px-4">
-      {/* Hero Welcome Badge */}
-      <div className="mb-6 bg-white border border-slate-200 p-4 sm:p-6 rounded-2xl shadow-sm">
-        <div className="text-center sm:text-left flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold mb-2.5">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Barbearia Delivery em Domicílio</span>
+  // Se o usuário ainda não iniciou o fluxo interativo de agendamento, mostra a Vitrine Inicial com o botão Agende
+  if (!isBookingActive) {
+    return (
+      <div className="w-full max-w-5xl mx-auto py-4 sm:py-6 px-3 sm:px-4 space-y-6">
+        {/* Hero Welcome Card */}
+        <div className="bg-white border border-slate-200 p-5 sm:p-8 rounded-2xl shadow-sm relative overflow-hidden">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold mb-3">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>Barbearia Delivery em Domicílio • Belém-PA</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                Corte Cabelo & Barba no Conforto da Sua Casa
+              </h1>
+              <p className="text-slate-600 text-xs sm:text-sm mt-2 leading-relaxed">
+                Atendimento executivo e profissional com os melhores barbeiros credenciados em Belém. Sem trânsito, sem espera, com equipamento 100% esterilizado e hora marcada.
+              </p>
+
+              {/* Trust badges */}
+              <div className="mt-4 flex flex-wrap items-center gap-2.5 sm:gap-3 text-xs text-slate-600">
+                <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <span className="font-semibold text-slate-800">Barbeiros Verificados</span>
+                </div>
+                <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
+                  <Home className="w-4 h-4 text-blue-600" />
+                  <span className="font-semibold text-slate-800">Equipamento Esterilizado</span>
+                </div>
+                <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span className="font-semibold text-slate-800">Pagamento no Local</span>
+                </div>
+              </div>
             </div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight leading-tight">
-              Corte Cabelo & Barba sem sair de casa
-            </h1>
-            <p className="text-slate-500 text-xs sm:text-sm mt-1">
-              Informe seu endereço, data e horário para conectar-se aos melhores barbeiros disponíveis no seu bairro.
-            </p>
+
+            {/* Barber Trust Avatars in Hero */}
+            <div className="shrink-0 flex flex-col items-center lg:items-end gap-3 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/80">
+              <div className="flex -space-x-3 overflow-hidden">
+                {barbers.map(b => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => setPreviewBarber(b)}
+                    className="inline-block relative rounded-full ring-2 ring-white hover:ring-blue-500 hover:z-10 transition cursor-pointer"
+                    title={`Ver foto e perfil de ${b.name}`}
+                  >
+                    <img
+                      src={b.avatar}
+                      alt={b.name}
+                      className="h-11 w-11 rounded-full object-cover shadow-xs"
+                      referrerPolicy="no-referrer"
+                    />
+                  </button>
+                ))}
+              </div>
+              <div className="text-center lg:text-right">
+                <div className="flex items-center justify-center lg:justify-end gap-1.5">
+                  <div className="flex text-amber-400">
+                    <Star className="w-4 h-4 fill-amber-400" />
+                    <Star className="w-4 h-4 fill-amber-400" />
+                    <Star className="w-4 h-4 fill-amber-400" />
+                    <Star className="w-4 h-4 fill-amber-400" />
+                    <Star className="w-4 h-4 fill-amber-400" />
+                  </div>
+                  <span className="text-xs font-bold text-slate-900">4.9 / 5.0</span>
+                </div>
+                <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                  {barbers.length} profissionais disponíveis em Belém
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="shrink-0 flex flex-wrap items-center justify-center sm:justify-start gap-2.5 sm:gap-4 text-xs text-slate-600 bg-slate-50 p-2.5 sm:p-3.5 rounded-xl border border-slate-200">
-            <div className="flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span className="font-medium text-[11px] sm:text-xs">Barbeiros Verificados</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Home className="w-4 h-4 text-blue-600" />
-              <span className="font-medium text-[11px] sm:text-xs">Equipamento Esterilizado</span>
-            </div>
+          {/* Destaque Central: O Botão AGENDE e Status do Usuário */}
+          <div className="mt-6 pt-6 border-t border-slate-100">
+            {currentUser ? (
+              <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50/70 border border-blue-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-base shadow-xs">
+                    {currentUser.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-slate-900">
+                        Olá, {currentUser.name}!
+                      </span>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-semibold">
+                        Conta Ativa
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      Conectado como {currentUser.email} • Belém-PA
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <button
+                    id="btn-main-schedule-hero-logged"
+                    onClick={() => handleStartBooking()}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-xl text-sm transition shadow-sm cursor-pointer"
+                  >
+                    <Scissors className="w-4 h-4" />
+                    <span>Agendar Atendimento a Domicílio</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                  {onOpenClientAppointments && (
+                    <button
+                      type="button"
+                      id="btn-open-my-appointments-hero"
+                      onClick={onOpenClientAppointments}
+                      className="px-4 py-3 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition cursor-pointer shrink-0"
+                    >
+                      Meus Agendamentos
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="p-5 bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 text-white rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-5 shadow-md">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-blue-300">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span>Cadastro Obrigatório para Confirmar Atendimento</span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-white">
+                    Solicite seu atendimento a domicílio com hora marcada
+                  </h3>
+                  <p className="text-xs text-slate-300 max-w-xl leading-relaxed">
+                    Para garantir a segurança do cliente e do barbeiro parceiro, o agendamento requer login ou cadastro prévio. Os dados são salvos no banco de dados e você recebe a confirmação imediata por e-mail.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+                  <button
+                    id="btn-main-schedule-hero-guest"
+                    onClick={() => handleStartBooking()}
+                    className="flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold px-6 py-3.5 rounded-xl text-sm transition shadow-md cursor-pointer hover:scale-[1.02]"
+                  >
+                    <Scissors className="w-4 h-4" />
+                    <span>Agendar Atendimento</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    id="btn-hero-guest-login"
+                    onClick={() => openAuthModal('login')}
+                    className="px-4 py-3.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs transition cursor-pointer text-center"
+                  >
+                    Já tenho conta
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Barbers Photo Showcase in Hero */}
-        <div className="mt-5 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex -space-x-2.5 overflow-hidden">
-              {barbers.map(b => (
-                <button
-                  key={b.id}
-                  type="button"
-                  onClick={() => setPreviewBarber(b)}
-                  className="inline-block relative rounded-full ring-2 ring-white hover:ring-blue-500 hover:z-10 transition cursor-pointer"
-                  title={`Ver foto e perfil de ${b.name}`}
-                >
-                  <img
-                    src={b.avatar}
-                    alt={b.name}
-                    className="h-10 w-10 rounded-full object-cover shadow-xs"
-                    referrerPolicy="no-referrer"
-                  />
-                </button>
-              ))}
-            </div>
+        {/* Como Funciona o Atendimento em Domicílio (3 Passos Claros) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <div className="flex items-center gap-1.5">
-                <div className="flex text-amber-400">
-                  <Star className="w-3.5 h-3.5 fill-amber-400" />
-                  <Star className="w-3.5 h-3.5 fill-amber-400" />
-                  <Star className="w-3.5 h-3.5 fill-amber-400" />
-                  <Star className="w-3.5 h-3.5 fill-amber-400" />
-                  <Star className="w-3.5 h-3.5 fill-amber-400" />
-                </div>
-                <span className="text-xs font-bold text-slate-800">4.9 / 5.0</span>
-                <span className="text-[11px] text-slate-400 font-medium">({barbers.reduce((acc, b) => acc + b.reviewsCount, 0)} avaliações)</span>
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center font-bold text-sm mb-3">
+                1
               </div>
-              <p className="text-[11px] text-slate-500 font-medium">
-                {barbers.length} barbeiros com fotos e perfis verificados disponíveis
+              <h3 className="text-sm font-bold text-slate-900">1. Agende em 1 Minuto</h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                Informe seu endereço em Belém (Nazaré, Umarizal, Marco, etc.), selecione o corte e o horário mais conveniente.
               </p>
             </div>
+            <div className="mt-3 text-[11px] text-blue-600 font-semibold flex items-center gap-1">
+              <span>Cadastro rápido no banco de dados</span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              {neighborhoods[0]?.city ? `Disponíveis Hoje em ${neighborhoods[0].city}` : 'Disponíveis Hoje em Belém'}
-            </span>
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center font-bold text-sm mb-3">
+                2
+              </div>
+              <h3 className="text-sm font-bold text-slate-900">2. Barbeiro Vai Até Você</h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                O profissional credenciado se desloca até sua casa ou escritório com maleta completa e ferramentas higienizadas.
+              </p>
+            </div>
+            <div className="mt-3 text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+              <span>Sem trânsito nem espera</span>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center font-bold text-sm mb-3">
+                3
+              </div>
+              <h3 className="text-sm font-bold text-slate-900">3. Pague no Local</h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                Após ser atendido com padrão de barbearia executiva, pague diretamente ao profissional via Pix, Cartão ou Dinheiro.
+              </p>
+            </div>
+            <div className="mt-3 text-[11px] text-amber-600 font-semibold flex items-center gap-1">
+              <span>Confirmação enviada por e-mail</span>
+            </div>
           </div>
         </div>
+
+        {/* Galeria Completa dos Barbeiros de Belém */}
+        <BarbersGallery
+          barbers={barbers}
+          selectedNeighborhood={address.neighborhood}
+          selectedBarber={selectedBarber}
+          onSelectBarber={handleSelectBarberFromGallery}
+          onOpenBarberModal={b => setPreviewBarber(b)}
+        />
+
+        {/* Mapa e Cobertura dos Bairros em Belém */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Bairros Atendidos em Belém-PA</h2>
+              <p className="text-xs text-slate-500">
+                Nossos barbeiros atendem nas principais zonas urbanas de Belém com agilidade.
+              </p>
+            </div>
+            <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200">
+              {neighborhoods.length} Bairros Mapeados
+            </span>
+          </div>
+
+          <BelemCoverageMap
+            neighborhood={address.neighborhood}
+            street={address.street}
+            number={address.number}
+            city={address.city}
+            availableBarbersCount={availableBarbersForNeighborhood.length}
+            showToggle={false}
+            defaultExpanded={true}
+          />
+        </div>
+
+        {/* Chamada Final Inferior */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl p-6 sm:p-8 text-center shadow-md">
+          <h2 className="text-xl sm:text-2xl font-bold mb-2">Pronto para renovar seu visual hoje?</h2>
+          <p className="text-blue-100 text-xs sm:text-sm max-w-lg mx-auto mb-5">
+            Escolha seu horário e receba um barbeiro profissional credenciado sem sair do conforto da sua casa.
+          </p>
+          <button
+            id="btn-bottom-schedule-cta"
+            onClick={() => handleStartBooking()}
+            className="inline-flex items-center gap-2 bg-white hover:bg-slate-100 text-blue-900 font-bold px-8 py-3.5 rounded-xl text-sm transition shadow-lg cursor-pointer"
+          >
+            <Scissors className="w-4 h-4 text-blue-600" />
+            <span>Agendar Atendimento a Domicílio</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Barber Detail Lightbox Modal */}
+        <BarberDetailModal
+          barber={previewBarber}
+          onClose={() => setPreviewBarber(null)}
+          onSelectBarber={handleSelectBarberFromGallery}
+          isSelected={selectedBarber?.id === previewBarber?.id}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full max-w-4xl mx-auto py-4 sm:py-6 px-3 sm:px-4 space-y-6">
+      {/* Top Bar com Botão Voltar e Status de Autenticação */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <button
+          type="button"
+          id="btn-back-to-home-showcase"
+          onClick={() => setIsBookingActive(false)}
+          className="flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-900 transition cursor-pointer self-start sm:self-auto"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Voltar para a Página Inicial / Vitrine</span>
+        </button>
+
+        {currentUser ? (
+          <div className="flex items-center gap-2 text-xs text-slate-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>
+              Agendando como: <strong>{currentUser.name}</strong> ({currentUser.email})
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-amber-700 font-medium">Não autenticado</span>
+            <button
+              type="button"
+              onClick={() => openAuthModal('login')}
+              className="text-xs font-bold text-blue-600 hover:underline cursor-pointer"
+            >
+              Fazer Login
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Progress Steps Header */}
-      <div className="flex items-center justify-between mb-8 px-2">
+      <div className="flex items-center justify-between mb-2 px-2">
         {[
           { num: 1, label: 'Endereço', icon: MapPin },
           { num: 2, label: 'Serviço & Data', icon: CalendarIcon },
@@ -380,184 +674,173 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
 
       {/* Step 1: Address */}
       {step === 1 && (
-        <>
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-            {/* Selected Barber Feedback if pre-selected from photo gallery */}
-            {selectedBarber && (
-              <div className="mb-5 p-3.5 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <img
-                    src={selectedBarber.avatar}
-                    alt={selectedBarber.name}
-                    className="w-10 h-10 rounded-full object-cover border-2 border-blue-400 shrink-0 shadow-xs"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold text-slate-900">{selectedBarber.name}</span>
-                      <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-semibold">
-                        Barbeiro Selecionado
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-500">
-                      O profissional atenderá no endereço informado abaixo ({address.neighborhood}).
-                    </p>
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          {/* Selected Barber Feedback if pre-selected from photo gallery */}
+          {selectedBarber && (
+            <div className="mb-5 p-3.5 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <img
+                  src={selectedBarber.avatar}
+                  alt={selectedBarber.name}
+                  className="w-10 h-10 rounded-full object-cover border-2 border-blue-400 shrink-0 shadow-xs"
+                  referrerPolicy="no-referrer"
+                />
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-slate-900">{selectedBarber.name}</span>
+                    <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-semibold">
+                      Barbeiro Selecionado
+                    </span>
                   </div>
+                  <p className="text-[11px] text-slate-500">
+                    O profissional atenderá no endereço informado abaixo ({address.neighborhood}).
+                  </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedBarber(null)}
-                  className="text-xs text-blue-600 hover:text-blue-800 font-semibold underline cursor-pointer shrink-0"
-                >
-                  Trocar Barbeiro
-                </button>
               </div>
-            )}
-
-            <div className="flex items-center gap-3 mb-5">
-              <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
-                <MapPin className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">Onde será o atendimento?</h2>
-                <p className="text-xs text-slate-500">
-                  O barbeiro irá até a sua residência ou trabalho no bairro indicado.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Neighborhood selector */}
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Bairro de Atendimento <span className="text-blue-600">*</span>
-                </label>
-                <select
-                  id="select-neighborhood"
-                  value={address.neighborhood}
-                  onChange={e => {
-                    const sel = e.target.value;
-                    const found = neighborhoods.find(n => n.name === sel);
-                    setAddress(prev => ({
-                      ...prev,
-                      neighborhood: sel,
-                      city: found?.city || prev.city,
-                    }));
-                  }}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
-                >
-                  {neighborhoods.map(n => (
-                    <option key={n.name} value={n.name}>
-                      {n.name} ({n.region} - {n.city})
-                    </option>
-                  ))}
-                </select>
-                <p className="text-[11px] text-slate-500 mt-1">
-                  Filtraremos os barbeiros com disponibilidade para atender neste bairro.
-                </p>
-              </div>
-
-              {/* Street */}
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Rua / Avenida <span className="text-blue-600">*</span>
-                </label>
-                <input
-                  id="input-street"
-                  type="text"
-                  placeholder="Ex: Av. Governador José Malcher, 815"
-                  value={address.street}
-                  onChange={e => setAddress({ ...address, street: e.target.value })}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition placeholder:text-slate-400"
-                />
-              </div>
-
-              {/* Number */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Número <span className="text-blue-600">*</span>
-                </label>
-                <input
-                  id="input-number"
-                  type="text"
-                  placeholder="Ex: 850"
-                  value={address.number}
-                  onChange={e => setAddress({ ...address, number: e.target.value })}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition placeholder:text-slate-400"
-                />
-              </div>
-
-              {/* Complement */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Complemento (Opcional)
-                </label>
-                <input
-                  id="input-complement"
-                  type="text"
-                  placeholder="Ex: Apto 42, Bloco 2"
-                  value={address.complement}
-                  onChange={e => setAddress({ ...address, complement: e.target.value })}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition placeholder:text-slate-400"
-                />
-              </div>
-
-              {/* Reference */}
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Ponto de Referência / Instruções de Portaria
-                </label>
-                <input
-                  id="input-reference"
-                  type="text"
-                  placeholder="Ex: Próximo à padaria, interfone 42, portaria 24h"
-                  value={address.reference}
-                  onChange={e => setAddress({ ...address, reference: e.target.value })}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition placeholder:text-slate-400"
-                />
-              </div>
-            </div>
-
-            {/* Mapa Interativo de Cobertura em Belém (100% Gratuito e Leve) */}
-            <div className="mt-5">
-              <BelemCoverageMap
-                neighborhood={address.neighborhood}
-                street={address.street}
-                number={address.number}
-                city={address.city}
-                availableBarbersCount={availableBarbersForNeighborhood.length}
-                showToggle={true}
-                defaultExpanded={true}
-              />
-            </div>
-
-            <div className="mt-6 flex flex-col sm:flex-row justify-end">
               <button
-                id="btn-step1-next"
-                onClick={() => {
-                  if (!address.street.trim() || !address.number.trim()) {
-                    alert('Por favor, preencha o nome da rua e o número.');
-                    return;
-                  }
-                  setStep(2);
-                }}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 sm:py-2.5 rounded-xl text-sm transition shadow-sm cursor-pointer"
+                type="button"
+                onClick={() => setSelectedBarber(null)}
+                className="text-xs text-blue-600 hover:text-blue-800 font-semibold underline cursor-pointer shrink-0"
               >
-                <span>Avançar para Serviços e Horário</span>
-                <ChevronRight className="w-4 h-4" />
+                Trocar Barbeiro
               </button>
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 mb-5">
+            <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
+              <MapPin className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Onde será o atendimento?</h2>
+              <p className="text-xs text-slate-500">
+                O barbeiro irá até a sua residência ou trabalho no bairro indicado.
+              </p>
             </div>
           </div>
 
-          {/* Barbers Photo Showcase & Profiles on Initial Screen */}
-          <BarbersGallery
-            barbers={barbers}
-            selectedNeighborhood={address.neighborhood}
-            selectedBarber={selectedBarber}
-            onSelectBarber={handleSelectBarberFromGallery}
-            onOpenBarberModal={b => setPreviewBarber(b)}
-          />
-        </>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Neighborhood selector */}
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Bairro de Atendimento <span className="text-blue-600">*</span>
+              </label>
+              <select
+                id="select-neighborhood"
+                value={address.neighborhood}
+                onChange={e => {
+                  const sel = e.target.value;
+                  const found = neighborhoods.find(n => n.name === sel);
+                  setAddress(prev => ({
+                    ...prev,
+                    neighborhood: sel,
+                    city: found?.city || prev.city,
+                  }));
+                }}
+                className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+              >
+                {neighborhoods.map(n => (
+                  <option key={n.name} value={n.name}>
+                    {n.name} ({n.region} - {n.city})
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] text-slate-500 mt-1">
+                Filtraremos os barbeiros com disponibilidade para atender neste bairro.
+              </p>
+            </div>
+
+            {/* Street */}
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Rua / Avenida <span className="text-blue-600">*</span>
+              </label>
+              <input
+                id="input-street"
+                type="text"
+                placeholder="Ex: Av. Governador José Malcher, 815"
+                value={address.street}
+                onChange={e => setAddress({ ...address, street: e.target.value })}
+                className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition placeholder:text-slate-400"
+              />
+            </div>
+
+            {/* Number */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Número <span className="text-blue-600">*</span>
+              </label>
+              <input
+                id="input-number"
+                type="text"
+                placeholder="Ex: 850"
+                value={address.number}
+                onChange={e => setAddress({ ...address, number: e.target.value })}
+                className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition placeholder:text-slate-400"
+              />
+            </div>
+
+            {/* Complement */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Complemento (Opcional)
+              </label>
+              <input
+                id="input-complement"
+                type="text"
+                placeholder="Ex: Apto 42, Bloco 2"
+                value={address.complement}
+                onChange={e => setAddress({ ...address, complement: e.target.value })}
+                className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition placeholder:text-slate-400"
+              />
+            </div>
+
+            {/* Reference */}
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Ponto de Referência / Instruções de Portaria
+              </label>
+              <input
+                id="input-reference"
+                type="text"
+                placeholder="Ex: Próximo à padaria, interfone 42, portaria 24h"
+                value={address.reference}
+                onChange={e => setAddress({ ...address, reference: e.target.value })}
+                className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition placeholder:text-slate-400"
+              />
+            </div>
+          </div>
+
+          {/* Mapa Interativo de Cobertura em Belém (100% Gratuito e Leve) */}
+          <div className="mt-5">
+            <BelemCoverageMap
+              neighborhood={address.neighborhood}
+              street={address.street}
+              number={address.number}
+              city={address.city}
+              availableBarbersCount={availableBarbersForNeighborhood.length}
+              showToggle={true}
+              defaultExpanded={true}
+            />
+          </div>
+
+          <div className="mt-6 flex flex-col sm:flex-row justify-end">
+            <button
+              id="btn-step1-next"
+              onClick={() => {
+                if (!address.street.trim() || !address.number.trim()) {
+                  alert('Por favor, preencha o nome da rua e o número.');
+                  return;
+                }
+                setStep(2);
+              }}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 sm:py-2.5 rounded-xl text-sm transition shadow-sm cursor-pointer"
+            >
+              <span>Avançar para Serviços e Horário</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Step 2: Service & Date/Time */}
@@ -935,36 +1218,51 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
 
           {/* User Account / Pre-cadastro Prompt */}
           {currentUser ? (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-800">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>
-                  Conectado como <strong>{currentUser.name}</strong> ({currentUser.email})
-                </span>
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-900">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                  {currentUser.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="font-bold text-slate-900 text-sm">
+                    {currentUser.name}
+                  </p>
+                  <p className="text-slate-600">
+                    {currentUser.email} {currentUser.phone ? `• ${currentUser.phone}` : ''}
+                  </p>
+                </div>
               </div>
-              <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md">
-                Conta Ativa
+              <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-300">
+                ✓ Conta Autenticada
               </span>
             </div>
           ) : (
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-blue-900">
-              <span>
-                Já possui conta ou pré-cadastro no Barber-Now?
-              </span>
-              <div className="flex items-center gap-2">
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-bold text-amber-950 text-xs sm:text-sm">
+                    Identificação Obrigatória para Confirmar Agendamento
+                  </h4>
+                  <p className="text-xs text-amber-800 mt-0.5">
+                    Para garantir a segurança do atendimento e salvar o agendamento em seu histórico no banco de dados, é necessário entrar na sua conta ou criar um cadastro gratuito.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => openAuthModal('login')}
-                  className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition cursor-pointer shadow-xs"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition shadow-xs cursor-pointer"
                 >
-                  Entrar na Conta
+                  Fazer Login
                 </button>
                 <button
                   type="button"
                   onClick={() => openAuthModal('register_client')}
-                  className="px-3 py-1 rounded-lg bg-white border border-blue-300 hover:bg-blue-100 text-blue-800 font-semibold text-xs transition cursor-pointer"
+                  className="px-4 py-2 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 text-xs font-semibold rounded-lg transition cursor-pointer"
                 >
-                  Pré-cadastrar
+                  Criar Cadastro Gratuito
                 </button>
               </div>
             </div>
@@ -1024,7 +1322,7 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
 
             <div className="sm:col-span-2 text-[11px] text-slate-500 flex items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
               <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
-              <span>Privacidade Barber-Now: O contato e as confirmações ocorrem estritamente via plataforma e por e-mail. Seus dados nunca são compartilhados.</span>
+              <span>Privacidade Barber-Now: O contato e as confirmações ocorrem estritamente via plataforma e por e-mail. Seus dados ficam salvos de forma segura no banco de dados.</span>
             </div>
           </div>
 
@@ -1037,14 +1335,26 @@ export const ClientBookingFlow: React.FC<ClientBookingFlowProps> = ({ onBookingS
               ← Voltar para Escolha de Barbeiro
             </button>
 
-            <button
-              type="submit"
-              id="btn-confirm-appointment"
-              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold px-6 sm:px-8 py-3.5 sm:py-3 rounded-xl text-sm transition shadow-sm cursor-pointer"
-            >
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>Confirmar Agendamento</span>
-            </button>
+            {currentUser ? (
+              <button
+                type="submit"
+                id="btn-confirm-appointment"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold px-6 sm:px-8 py-3.5 sm:py-3 rounded-xl text-sm transition shadow-sm cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>Confirmar Agendamento</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                id="btn-auth-to-confirm-appointment"
+                onClick={() => openAuthModal('login')}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 sm:px-8 py-3.5 sm:py-3 rounded-xl text-sm transition shadow-sm cursor-pointer"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Entrar ou Cadastrar para Confirmar</span>
+              </button>
+            )}
           </div>
         </form>
       )}

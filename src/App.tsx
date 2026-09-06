@@ -22,6 +22,7 @@ const MainContent: React.FC = () => {
             onBookingSuccess={() => {
               // Can optionally open client drawer or let them see confirmation screen
             }}
+            onOpenClientAppointments={() => setIsClientDrawerOpen(true)}
           />
         );
       case 'barber_agenda':

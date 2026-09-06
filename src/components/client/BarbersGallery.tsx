@@ -238,12 +238,12 @@ export const BarbersGallery: React.FC<BarbersGalleryProps> = ({
                     {isSelected ? (
                       <>
                         <Check className="w-3.5 h-3.5" />
-                        <span>Barbeiro Escolhido</span>
+                        <span>Barbeiro Selecionado</span>
                       </>
                     ) : (
                       <>
                         <Scissors className="w-3.5 h-3.5" />
-                        <span>Escolher Barbeiro</span>
+                        <span>Agendar com este Barbeiro</span>
                       </>
                     )}
                   </button>

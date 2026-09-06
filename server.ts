@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
@@ -5,7 +6,9 @@ import { pool, initDb } from './src/db/database.ts';
 import { INITIAL_BARBERS, INITIAL_APPOINTMENTS, INITIAL_NEIGHBORHOODS, INITIAL_USERS } from './src/data/initialData.ts';
 import {
   SENDER_EMAIL,
+  getSenderEmail,
   isRealSmtpConfigured,
+  setRuntimeSmtpPassword,
   sendRegistrationConfirmationEmail,
   sendBookingConfirmationEmail,
   sendBookingStatusUpdateEmail,
@@ -384,23 +387,48 @@ async function startServer() {
 
   // GET /api/email/status (Verifica status do remetente e servidor SMTP)
   app.get('/api/email/status', (req, res) => {
+    const configured = isRealSmtpConfigured();
     res.json({
-      sender: SENDER_EMAIL,
-      provider: 'Gmail (3facil.com)',
-      smtpConfigured: isRealSmtpConfigured(),
+      sender: getSenderEmail(),
+      provider: 'Gmail (smtp.gmail.com)',
+      smtpConfigured: configured,
       system: 'Barber-Now Belém',
       producedBy: '3facil.com',
       website: 'https://3facil.com',
-      note: isRealSmtpConfigured()
-        ? 'Serviço SMTP com credenciais ativas para site3facil@gmail.com'
-        : 'Remetente padrão configurado para site3facil@gmail.com (configure SMTP_PASS para envio externo direto)',
+      note: configured
+        ? 'Serviço SMTP com Senha de Aplicativo ativa para site3facil@gmail.com'
+        : 'Aguardando Senha de Aplicativo do Gmail (16 dígitos). Configure em /api/email/config ou no arquivo .env',
     });
   });
 
-  // POST /api/email/test (Dispara teste de envio imediato)
+  // POST /api/email/config (Configura a Senha de Aplicativo do Gmail)
+  app.post('/api/email/config', (req, res) => {
+    const { password } = req.body;
+    if (!password || password.trim().length < 8) {
+      return res.status(400).json({
+        success: false,
+        error: 'Por favor, informe uma Senha de Aplicativo do Gmail válida (código de 16 caracteres gerado em myaccount.google.com/apppasswords).',
+      });
+    }
+
+    setRuntimeSmtpPassword(password);
+    return res.json({
+      success: true,
+      message: 'Senha de Aplicativo configurada com sucesso para site3facil@gmail.com!',
+      smtpConfigured: isRealSmtpConfigured(),
+      sender: getSenderEmail(),
+    });
+  });
+
+  // POST /api/email/test (Dispara teste de envio com diagnóstico detalhado)
   app.post('/api/email/test', async (req, res) => {
-    const { to, type = 'registration' } = req.body;
-    const targetEmail = to?.trim() || SENDER_EMAIL;
+    const { to, type = 'registration', customPassword } = req.body;
+    const targetEmail = to?.trim() || getSenderEmail();
+
+    // Se forneceu customPassword, aplica no runtime se tiver formato válido
+    if (customPassword && customPassword.trim().length >= 8) {
+      setRuntimeSmtpPassword(customPassword);
+    }
 
     try {
       let result;
@@ -419,6 +447,7 @@ async function startServer() {
           neighborhood: 'Nazaré',
           city: 'Belém',
           notes: 'Teste de disparo de e-mail de confirmação de agendamento.',
+          customPassword,
         });
       } else {
         result = await sendRegistrationConfirmationEmail({
@@ -426,12 +455,24 @@ async function startServer() {
           name: 'Usuário de Teste 3fácil',
           role: 'client',
           neighborhood: 'Umarizal',
+          customPassword,
+        });
+      }
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          error: result.error || 'Falha ao despachar e-mail.',
+          details: result,
+          sender: getSenderEmail(),
+          target: targetEmail,
+          producedBy: '3facil.com',
         });
       }
 
       return res.json({
         success: true,
-        message: `Disparo de teste realizado pelo remetente ${SENDER_EMAIL}`,
+        message: `Disparo realizado com sucesso pelo remetente ${getSenderEmail()}`,
         target: targetEmail,
         producedBy: '3facil.com',
         details: result,

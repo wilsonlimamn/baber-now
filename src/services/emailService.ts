@@ -1,49 +1,72 @@
 import nodemailer from 'nodemailer';
+import fs from 'fs';
+import path from 'path';
 
-export const SENDER_EMAIL = process.env.SMTP_USER || 'site3facil@gmail.com';
+let runtimePassword = '';
+
+export const getSenderEmail = () => process.env.SMTP_USER || 'site3facil@gmail.com';
+export const SENDER_EMAIL = getSenderEmail();
 export const SENDER_NAME = 'Barber-Now Belém (3facil.com)';
-export const SENDER_FULL = `"${SENDER_NAME}" <${SENDER_EMAIL}>`;
+export const getSenderFull = () => `"${SENDER_NAME}" <${getSenderEmail()}>`;
+export const SENDER_FULL = getSenderFull();
 
-// Verifica se há senha de aplicativo SMTP configurada
-const SMTP_PASSWORD = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASS || '';
+export const getSmtpPassword = (): string => {
+  const envPass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASS || '';
+  return (runtimePassword || envPass || '').trim().replace(/\s+/g, '');
+};
+
+export const setRuntimeSmtpPassword = (pass: string) => {
+  runtimePassword = pass.trim().replace(/\s+/g, '');
+  process.env.SMTP_PASS = runtimePassword;
+  
+  // Tenta persistir no arquivo .env se estiver disponível
+  try {
+    const envPath = path.join(process.cwd(), '.env');
+    let content = '';
+    if (fs.existsSync(envPath)) {
+      content = fs.readFileSync(envPath, 'utf8');
+      if (content.includes('SMTP_PASS=')) {
+        content = content.replace(/SMTP_PASS=.*/g, `SMTP_PASS="${runtimePassword}"`);
+      } else {
+        content += `\nSMTP_PASS="${runtimePassword}"\n`;
+      }
+    } else {
+      content = `SMTP_USER="${getSenderEmail()}"\nSMTP_PASS="${runtimePassword}"\n`;
+    }
+    fs.writeFileSync(envPath, content, 'utf8');
+    console.log('[E-mail Service] Senha SMTP persistida com sucesso em .env');
+  } catch (err: any) {
+    console.warn('[E-mail Service] Não foi possível persistir em .env (mantida em memória):', err?.message);
+  }
+};
+
+export const isRealSmtpConfigured = (): boolean => {
+  const pass = getSmtpPassword();
+  return Boolean(pass && pass.length >= 8);
+};
 
 // Cria o transporter do Nodemailer
-export const createTransporter = () => {
-  if (SMTP_PASSWORD) {
-    return nodemailer.createTransport({
-      service: 'gmail',
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: {
-        user: SENDER_EMAIL,
-        pass: SMTP_PASSWORD,
-      },
-    });
-  }
-
-  // Se não houver senha no ambiente, cria um transporter com fallback transparente ou logging
+export const createTransporter = (overridePass?: string) => {
+  const pass = (overridePass || getSmtpPassword()).trim().replace(/\s+/g, '');
+  
   return nodemailer.createTransport({
+    service: 'gmail',
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
+    port: 465,
+    secure: true,
     auth: {
-      user: SENDER_EMAIL,
-      pass: 'not_configured',
+      user: getSenderEmail(),
+      pass: pass,
     },
-    // Em modo fallback para teste sem credenciais reais bloqueando o processo
     tls: {
       rejectUnauthorized: false,
     },
   });
 };
 
-export const isRealSmtpConfigured = (): boolean => {
-  return Boolean(SMTP_PASSWORD && SMTP_PASSWORD.trim().length > 0);
-};
-
 // Layout HTML padrão com rodapé da 3facil.com
 const wrapEmailTemplate = (title: string, bodyContent: string) => {
+  const currentYear = new Date().getFullYear();
   return `
   <!DOCTYPE html>
   <html lang="pt-BR">
@@ -60,12 +83,10 @@ const wrapEmailTemplate = (title: string, bodyContent: string) => {
       .badge { display: inline-block; background: #2563eb; color: #ffffff; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; margin-top: 8px; }
       .content { padding: 32px 24px; }
       .info-box { background: #f1f5f9; border-left: 4px solid #2563eb; border-radius: 8px; padding: 16px; margin: 20px 0; }
-      .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
       .footer { background: #0f172a; padding: 24px; text-align: center; color: #94a3b8; font-size: 12px; border-top: 1px solid #1e293b; }
       .footer a { color: #60a5fa; text-decoration: none; font-weight: 600; }
       .footer a:hover { text-decoration: underline; }
       .produced-by { margin-top: 12px; padding-top: 12px; border-top: 1px solid #334155; font-size: 13px; color: #cbd5e1; }
-      .btn { display: inline-block; background: #2563eb; color: #ffffff !important; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; margin-top: 20px; }
     </style>
   </head>
   <body>
@@ -74,7 +95,7 @@ const wrapEmailTemplate = (title: string, bodyContent: string) => {
         <div style="font-size: 28px; margin-bottom: 6px;">💈</div>
         <h1>Barber-Now Belém</h1>
         <p>Atendimento Profissional em Domicílio • Belém-PA</p>
-        <span class="badge">E-mail Oficial via site3facil@gmail.com</span>
+        <span class="badge">E-mail Oficial via ${getSenderEmail()}</span>
       </div>
       
       <div class="content">
@@ -82,11 +103,11 @@ const wrapEmailTemplate = (title: string, bodyContent: string) => {
       </div>
 
       <div class="footer">
-        <p style="margin: 0 0 8px 0;">Este e-mail foi disparado automaticamente pelo sistema de agendamento <strong>Barber-Now</strong>.</p>
-        <p style="margin: 0 0 8px 0;">Remetente Oficial: <strong>${SENDER_EMAIL}</strong></p>
+        <p style="margin: 0 0 8px 0;">Este e-mail foi disparado automaticamente pelo sistema <strong>Barber-Now</strong>.</p>
+        <p style="margin: 0 0 8px 0;">Remetente Oficial: <strong>${getSenderEmail()}</strong></p>
         <div class="produced-by">
-          Produzido com excelência por <a href="https://3facil.com" target="_blank" rel="noopener noreferrer">3facil.com</a>
-          <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Soluções Digitais & Sistemas Web • Belém-PA</div>
+          Site produzido por <a href="https://3facil.com" target="_blank" rel="noopener noreferrer">3facil.com</a>
+          <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Soluções Digitais & Sistemas Web • Belém-PA © ${currentYear}</div>
         </div>
       </div>
     </div>
@@ -95,15 +116,16 @@ const wrapEmailTemplate = (title: string, bodyContent: string) => {
   `;
 };
 
-// 1. Envio de Confirmação de Pré-cadastro
+// 1. Envio de Confirmação de Cadastro
 export const sendRegistrationConfirmationEmail = async (params: {
   toEmail: string;
   name: string;
   role: 'client' | 'barber';
   password?: string;
   neighborhood?: string;
+  customPassword?: string;
 }) => {
-  const { toEmail, name, role, password, neighborhood } = params;
+  const { toEmail, name, role, neighborhood, customPassword } = params;
   const isBarber = role === 'barber';
   const roleLabel = isBarber ? 'Barbeiro Parceiro' : 'Cliente';
 
@@ -120,7 +142,7 @@ export const sendRegistrationConfirmationEmail = async (params: {
         • <strong>E-mail de acesso:</strong> ${toEmail}<br>
         • <strong>Perfil:</strong> ${roleLabel}<br>
         ${neighborhood ? `• <strong>Bairro base em Belém:</strong> ${neighborhood}<br>` : ''}
-        • <strong>Remetente de envio:</strong> ${SENDER_EMAIL}<br>
+        • <strong>Remetente de envio:</strong> ${getSenderEmail()}<br>
       </div>
     </div>
 
@@ -147,10 +169,11 @@ export const sendRegistrationConfirmationEmail = async (params: {
     to: toEmail,
     subject: `💈 Confirmação de Cadastro no Barber-Now Belém (${roleLabel})`,
     html,
+    customPassword,
   });
 };
 
-// 2. Envio de Confirmação de Novo Agendamento (Para o Cliente e Barbeiro)
+// 2. Envio de Confirmação de Novo Agendamento
 export const sendBookingConfirmationEmail = async (params: {
   appointmentId: string;
   clientEmail: string;
@@ -166,6 +189,7 @@ export const sendBookingConfirmationEmail = async (params: {
   neighborhood: string;
   city: string;
   notes?: string;
+  customPassword?: string;
 }) => {
   const {
     appointmentId,
@@ -182,6 +206,7 @@ export const sendBookingConfirmationEmail = async (params: {
     neighborhood,
     city,
     notes,
+    customPassword,
   } = params;
 
   const formattedDate = date.split('-').reverse().join('/');
@@ -220,10 +245,11 @@ export const sendBookingConfirmationEmail = async (params: {
     cc: barberEmail,
     subject: `💈 Agendamento Barber-Now: ${serviceName} em ${formattedDate} às ${time} (${neighborhood})`,
     html,
+    customPassword,
   });
 };
 
-// 3. Envio de Notificação de Status Atualizado (Aprovado, A Caminho ou Concluído)
+// 3. Envio de Notificação de Status Atualizado
 export const sendBookingStatusUpdateEmail = async (params: {
   appointmentId: string;
   clientEmail: string;
@@ -234,6 +260,7 @@ export const sendBookingStatusUpdateEmail = async (params: {
   date: string;
   time: string;
   neighborhood: string;
+  customPassword?: string;
 }) => {
   const {
     appointmentId,
@@ -245,6 +272,7 @@ export const sendBookingStatusUpdateEmail = async (params: {
     date,
     time,
     neighborhood,
+    customPassword,
   } = params;
 
   let statusTitle = 'Atualização do seu Agendamento';
@@ -295,57 +323,67 @@ export const sendBookingStatusUpdateEmail = async (params: {
     to: clientEmail,
     subject: `💈 Barber-Now Belém: ${statusTitle}`,
     html,
+    customPassword,
   });
 };
 
-// 4. Função interna de disparo via Nodemailer com log detalhado e fallback
-async function dispatchEmail(options: {
+// 4. Função interna de disparo via Nodemailer
+export async function dispatchEmail(options: {
   to: string;
   cc?: string;
   subject: string;
   html: string;
+  customPassword?: string;
 }) {
-  const isReal = isRealSmtpConfigured();
-  console.log(`[E-mail Service] Preparando envio de e-mail via ${SENDER_EMAIL} para: ${options.to}`);
-  console.log(`[E-mail Service] Assunto: ${options.subject}`);
-  console.log(`[E-mail Service] Produzido por: 3facil.com | SMTP Real Ativo: ${isReal ? 'SIM' : 'MODO SIMULAÇÃO/TESTE'}`);
+  const passToUse = (options.customPassword || getSmtpPassword()).trim().replace(/\s+/g, '');
+  const sender = getSenderEmail();
+  const isConfigured = Boolean(passToUse && passToUse.length >= 8);
 
-  if (!isReal) {
-    console.log(`[E-mail Service] Nota: Variável SMTP_PASS não configurada. Simulando envio com sucesso pelo remetente ${SENDER_EMAIL}.`);
+  console.log(`[E-mail Service] Preparando envio de e-mail via ${sender} para: ${options.to}`);
+  console.log(`[E-mail Service] Assunto: ${options.subject}`);
+  console.log(`[E-mail Service] Produzido por: 3facil.com | Senha SMTP: ${isConfigured ? 'DEFINIDA (' + passToUse.length + ' chars)' : 'NÃO DEFINIDA'}`);
+
+  if (!isConfigured) {
+    const errorMsg = `A Senha de Aplicativo do Gmail para ${sender} ainda não foi configurada. Para enviar e-mails reais através do Google, é obrigatório gerar uma Senha de App de 16 caracteres em myaccount.google.com/apppasswords e configurá-la como SMTP_PASS.`;
+    console.warn(`[E-mail Service] ALERTA: ${errorMsg}`);
     return {
-      success: true,
-      messageId: `simulated-${Date.now()}@site3facil.com`,
-      sender: SENDER_EMAIL,
+      success: false,
+      error: errorMsg,
+      needsAppPassword: true,
+      sender,
       recipient: options.to,
       realSmtp: false,
-      note: 'E-mail preparado e registrado pelo remetente site3facil@gmail.com (3facil.com). Para envio externo via servidor do Google, informe SMTP_PASS em .env.',
+      instructionsUrl: 'https://myaccount.google.com/apppasswords',
     };
   }
 
   try {
-    const transporter = createTransporter();
+    const transporter = createTransporter(passToUse);
     const info = await transporter.sendMail({
-      from: SENDER_FULL,
+      from: getSenderFull(),
       to: options.to,
       cc: options.cc,
       subject: options.subject,
       html: options.html,
     });
 
-    console.log(`[E-mail Service] E-mail enviado com sucesso via Gmail (${SENDER_EMAIL})! Message ID: ${info.messageId}`);
+    console.log(`[E-mail Service] ✅ E-mail enviado com sucesso via Gmail (${sender})! Message ID: ${info.messageId}`);
     return {
       success: true,
       messageId: info.messageId,
-      sender: SENDER_EMAIL,
+      sender,
       recipient: options.to,
       realSmtp: true,
+      response: info.response,
     };
   } catch (error: any) {
-    console.error(`[E-mail Service] Erro ao enviar e-mail via Gmail (${SENDER_EMAIL}):`, error?.message || error);
+    console.error(`[E-mail Service] ❌ Erro ao enviar e-mail via Gmail (${sender}):`, error?.message || error);
     return {
       success: false,
-      error: error?.message || 'Erro no envio de e-mail.',
-      sender: SENDER_EMAIL,
+      error: error?.message || 'Falha ao conectar com smtp.gmail.com.',
+      code: error?.code,
+      command: error?.command,
+      sender,
       recipient: options.to,
       realSmtp: true,
     };
