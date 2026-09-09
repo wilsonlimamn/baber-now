@@ -20,10 +20,10 @@ jobs:
       - name: Checkout do Repositório
         uses: actions/checkout@v4
 
-      - name: Configurar Node.js 20
+      - name: Configurar Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Instalar Dependências
         run: npm install --no-audit --prefer-offline || npm install
@@ -31,11 +31,11 @@ jobs:
       - name: Compilar Aplicação Web (Vite)
         run: npm run build
 
-      - name: Configurar Java 17 (JDK)
+      - name: Configurar Java 21 (JDK)
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
           cache: 'gradle'
 
       - name: Sincronizar Capacitor com Android
