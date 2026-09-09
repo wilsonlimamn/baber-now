@@ -35,8 +35,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenClientAppointments, onOpen
             onClick={() => setCurrentView('client')}
             className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group select-none shrink-0"
           >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-blue-600 hover:bg-blue-500 rounded-lg flex items-center justify-center font-bold text-lg sm:text-xl text-white shadow-sm transition group-hover:scale-105 shrink-0">
-              B
+            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-slate-800 border border-amber-500/40 hover:border-amber-400 rounded-lg flex items-center justify-center shadow-xs transition group-hover:scale-105 shrink-0 p-1">
+              <img src="/favicon.svg" alt="Barber-Now" className="w-full h-full object-contain drop-shadow-xs" />
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">

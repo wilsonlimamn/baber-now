@@ -51,8 +51,8 @@ export const DownloadAppModal: React.FC<DownloadAppModalProps> = ({ isOpen, onCl
           </button>
 
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-white text-blue-600 flex items-center justify-center font-bold text-xl shadow-md shrink-0">
-              <Smartphone className="w-6 h-6 text-blue-600" />
+            <div className="w-10 h-10 rounded-xl bg-slate-900 border border-amber-400 flex items-center justify-center shadow-md shrink-0 p-1.5">
+              <img src="/favicon.svg" alt="Barber-Now" className="w-full h-full object-contain" />
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-white/20 text-white border border-white/30">

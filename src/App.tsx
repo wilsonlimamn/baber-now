@@ -9,9 +9,11 @@ import { ClientAppointmentsDrawer } from './components/client/ClientAppointments
 import { AuthModal } from './components/auth/AuthModal.tsx';
 import { EmailTestModal } from './components/common/EmailTestModal.tsx';
 import { DownloadAppModal } from './components/common/DownloadAppModal.tsx';
+import { AppSplashScreen } from './components/common/AppSplashScreen.tsx';
 
 const MainContent: React.FC = () => {
   const { currentView, setCurrentView } = useBarberNow();
+  const [isLoadingSplash, setIsLoadingSplash] = useState(true);
   const [isClientDrawerOpen, setIsClientDrawerOpen] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
@@ -39,6 +41,14 @@ const MainContent: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+      {/* Tela de Abertura / Carregamento do App com Tesoura e Pente */}
+      {isLoadingSplash && (
+        <AppSplashScreen
+          minDuration={1200}
+          onFinish={() => setIsLoadingSplash(false)}
+        />
+      )}
+
       {/* Top Android App Download Notification Ribbon */}
       {showTopAppBanner && (
         <div className="bg-gradient-to-r from-emerald-700 via-teal-700 to-blue-700 text-white px-3 py-1.5 text-xs flex items-center justify-between shadow-xs z-30">
