@@ -1,9 +1,16 @@
 import { Barber, Appointment, NeighborhoodItem, AppointmentStatus, User, UserRole } from '../types.ts';
 
+// Garante caminho relativo no navegador/servidor e fallback remoto seguro caso execute em container local do Capacitor
+const API_BASE = typeof window !== 'undefined' && window.location.protocol.startsWith('capacitor')
+  ? 'https://barbernow.3facil.com'
+  : (((import.meta as any).env?.VITE_API_URL as string) || '');
+
+const apiUrl = (path: string) => `${API_BASE}${path}`;
+
 export const api = {
   async getHealth() {
     try {
-      const res = await fetch('/api/health');
+      const res = await fetch(apiUrl('/api/health'));
       return await res.json();
     } catch {
       return { status: 'offline' };
@@ -12,7 +19,7 @@ export const api = {
 
   async getBarbers(): Promise<Barber[]> {
     try {
-      const res = await fetch('/api/barbers');
+      const res = await fetch(apiUrl('/api/barbers'));
       if (res.ok) return await res.json();
     } catch (e) {
       console.warn('Falha na requisição /api/barbers, usando local:', e);
@@ -22,7 +29,7 @@ export const api = {
 
   async getNeighborhoods(): Promise<NeighborhoodItem[]> {
     try {
-      const res = await fetch('/api/neighborhoods');
+      const res = await fetch(apiUrl('/api/neighborhoods'));
       if (res.ok) return await res.json();
     } catch (e) {
       console.warn('Falha na requisição /api/neighborhoods, usando local:', e);
@@ -32,7 +39,7 @@ export const api = {
 
   async saveBarber(barber: Barber): Promise<Barber> {
     try {
-      const res = await fetch('/api/barbers', {
+      const res = await fetch(apiUrl('/api/barbers'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(barber),
@@ -46,7 +53,7 @@ export const api = {
 
   async getAppointments(): Promise<Appointment[]> {
     try {
-      const res = await fetch('/api/appointments');
+      const res = await fetch(apiUrl('/api/appointments'));
       if (res.ok) return await res.json();
     } catch (e) {
       console.warn('Falha na requisição /api/appointments, usando local:', e);
@@ -56,7 +63,7 @@ export const api = {
 
   async createAppointment(apt: Appointment): Promise<Appointment> {
     try {
-      const res = await fetch('/api/appointments', {
+      const res = await fetch(apiUrl('/api/appointments'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(apt),
@@ -70,7 +77,7 @@ export const api = {
 
   async updateAppointmentStatus(id: string, status: AppointmentStatus) {
     try {
-      await fetch(`/api/appointments/${id}/status`, {
+      await fetch(apiUrl(`/api/appointments/${id}/status`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
@@ -82,7 +89,7 @@ export const api = {
 
   async login(email: string, password?: string, role?: UserRole): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(apiUrl('/api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, role }),
@@ -105,7 +112,7 @@ export const api = {
     neighborhoods?: string[];
   }): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await fetch(apiUrl('/api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData),
@@ -120,7 +127,7 @@ export const api = {
 
   async getUsers(): Promise<User[]> {
     try {
-      const res = await fetch('/api/auth/users');
+      const res = await fetch(apiUrl('/api/auth/users'));
       if (res.ok) return await res.json();
     } catch (e) {
       console.warn('Falha na requisição /api/auth/users:', e);
@@ -138,7 +145,7 @@ export const api = {
     note: string;
   }> {
     try {
-      const res = await fetch('/api/email/status');
+      const res = await fetch(apiUrl('/api/email/status'));
       if (res.ok) return await res.json();
     } catch (e) {
       console.warn('Falha ao verificar status de e-mail:', e);
@@ -166,7 +173,7 @@ export const api = {
     details?: any;
   }> {
     try {
-      const res = await fetch('/api/email/test', {
+      const res = await fetch(apiUrl('/api/email/test'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
@@ -183,7 +190,7 @@ export const api = {
     error?: string;
   }> {
     try {
-      const res = await fetch('/api/email/config', {
+      const res = await fetch(apiUrl('/api/email/config'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),

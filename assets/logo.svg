@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#090D16" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047" />
+      <stop offset="50%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#B45309" />
+    </linearGradient>
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60A5FA" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+
+  <!-- Fundo com cantos arredondados suaves -->
+  <rect width="1024" height="1024" rx="224" fill="url(#bgGrad)" />
+
+  <!-- Aro circular dourado -->
+  <circle cx="512" cy="512" r="390" fill="none" stroke="url(#goldGrad)" stroke-width="20" opacity="0.9" />
+  <circle cx="512" cy="512" r="410" fill="none" stroke="#F59E0B" stroke-width="4" opacity="0.35" stroke-dasharray="16 12" />
+
+  <!-- Emblema Central em Camadas -->
+  <g filter="url(#shadow)">
+    <!-- Pente Estilizado (Barber Comb) Superior -->
+    <rect x="292" y="270" width="440" height="48" rx="14" fill="#F8FAFC" />
+    <path d="M 320 318 L 320 380 M 360 318 L 360 380 M 400 318 L 400 380 M 440 318 L 440 380 M 480 318 L 480 380 M 520 318 L 520 380 M 560 318 L 560 380 M 600 318 L 600 380 M 640 318 L 640 380 M 680 318 L 680 380 M 712 318 L 712 380" 
+          stroke="#94A3B8" stroke-width="14" stroke-linecap="round" />
+
+    <!-- Lâmina Tesoura 1 (Aço Prata) -->
+    <path d="M 480 490 L 740 230 C 760 210 790 210 810 230 C 830 250 830 280 810 300 L 550 560 Z" 
+          fill="#FFFFFF" />
+
+    <!-- Lâmina Tesoura 2 (Azul Elétrico) -->
+    <path d="M 520 490 L 810 780 C 830 800 830 830 810 850 C 790 870 760 870 740 850 L 480 590 Z" 
+          fill="url(#blueGrad)" />
+
+    <!-- Anéis da Tesoura (Empunhadura) -->
+    <circle cx="280" cy="740" r="80" fill="none" stroke="url(#goldGrad)" stroke-width="28" />
+    <circle cx="340" cy="640" r="68" fill="none" stroke="#FFFFFF" stroke-width="24" opacity="0.95" />
+
+    <!-- Haste de Conexão -->
+    <path d="M 336 700 L 490 520 L 520 540 L 380 730 Z" fill="#94A3B8" />
+
+    <!-- Pivô Central Dourado -->
+    <circle cx="512" cy="512" r="42" fill="url(#goldGrad)" stroke="#FFFFFF" stroke-width="8" />
+    <circle cx="512" cy="512" r="16" fill="#0F172A" />
+  </g>
+
+  <!-- Tipografia / Tagline inferior -->
+  <text x="512" y="930" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="74" fill="#F8FAFC" letter-spacing="8">BARBER-NOW</text>
+  <text x="512" y="980" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="28" fill="#F59E0B" letter-spacing="14">BELÉM • PARÁ</text>
+</svg>

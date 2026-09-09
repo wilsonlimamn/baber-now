@@ -1,0 +1,44 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Círculo de fundo centralizado do ícone -->
+    <path
+        android:fillColor="#1E293B"
+        android:pathData="M54,54m-38,0a38,38 0 1,0 76,0a38,38 0 1,0 -76,0" />
+
+    <!-- Aro dourado característico Barber-Now -->
+    <path
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="2.5"
+        android:fillColor="#00000000"
+        android:pathData="M54,54m-35,0a35,35 0 1,0 70,0a35,35 0 1,0 -70,0" />
+
+    <!-- Lâmina Tesoura 1 (Branco) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M51,51 L76,26 C77.5,24.5 80,24.5 81.5,26 C83,27.5 83,30 81.5,31.5 L58,55 Z" />
+
+    <!-- Lâmina Tesoura 2 (Azul/Dourado) -->
+    <path
+        android:fillColor="#3B82F6"
+        android:pathData="M55,51 L81.5,77.5 C83,79 83,81.5 81.5,83 C80,84.5 77.5,84.5 76,83 L51,58 Z" />
+
+    <!-- Pente Estilizado -->
+    <path
+        android:fillColor="#E2E8F0"
+        android:pathData="M30,40 L66,40 C67,40 68,39 68,38 L68,35 C68,34 67,33 66,33 L30,33 C29,33 28,34 28,35 L28,38 C28,39 29,40 30,40 Z" />
+
+    <path
+        android:strokeColor="#94A3B8"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M32,40 L32,46 M37,40 L37,46 M42,40 L42,46 M47,40 L47,46 M52,40 L52,46 M57,40 L57,46 M62,40 L62,46" />
+
+    <!-- Eixo pivô da tesoura -->
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M54,54m-3.5,0a3.5,3.5 0 1,0 7,0a3.5,3.5 0 1,0 -7,0" />
+</vector>
