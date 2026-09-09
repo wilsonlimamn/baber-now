@@ -8,8 +8,7 @@ const databaseUrl = process.env.DATABASE_URL;
 export const pool = databaseUrl
   ? new Pool({
       connectionString: databaseUrl,
-      // Configurações adequadas para containers Docker locais
-      max: 15,
+      max: 10,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
     })
@@ -17,6 +16,10 @@ export const pool = databaseUrl
 
 if (pool) {
   console.log('🔗 PostgreSQL pool inicializado com DATABASE_URL');
+  // Evita que o Node.js encerre com Unhandled error caso o Postgres caia ou rejeite conexão
+  pool.on('error', (err) => {
+    console.warn('⚠️ Aviso PostgreSQL pool (servidor continua ativo com fallback):', err.message);
+  });
 } else {
   console.log('ℹ️ DATABASE_URL não definida, o servidor usará persistência em memória/seed');
 }
@@ -27,7 +30,14 @@ if (pool) {
 export async function initDb() {
   if (!pool) return;
 
-  const client = await pool.connect();
+  let client;
+  try {
+    client = await pool.connect();
+  } catch (connErr: any) {
+    console.warn('⚠️ Não foi possível conectar ao PostgreSQL (iniciando em modo resiliente):', connErr.message);
+    return;
+  }
+
   try {
     await client.query(`
       CREATE TABLE IF NOT EXISTS barbers (
