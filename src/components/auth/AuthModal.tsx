@@ -391,6 +391,52 @@ export const AuthModal: React.FC = () => {
                 <div className="space-y-1.5">
                   <button
                     type="button"
+                    onClick={() => handleQuickLogin('wilsonlimamn@gmail.com', 'barber')}
+                    className="w-full text-left p-2 rounded-xl bg-purple-50 hover:bg-purple-100/70 border border-purple-200 text-xs transition flex items-center justify-between cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-md bg-purple-600 text-white flex items-center justify-center font-bold text-[11px]">
+                        W
+                      </div>
+                      <div>
+                        <span className="font-semibold text-slate-800 group-hover:text-purple-700">
+                          Wilson Lima (Administrador)
+                        </span>
+                        <span className="text-[10px] text-slate-500 block">
+                          wilsonlimamn@gmail.com • Painel Master
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-semibold text-purple-700 bg-purple-200/80 px-2 py-0.5 rounded-md">
+                      Entrar Master
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleQuickLogin('admin@barbernow.com', 'barber')}
+                    className="w-full text-left p-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs transition flex items-center justify-between cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-md bg-slate-700 text-white flex items-center justify-center font-bold text-[11px]">
+                        A
+                      </div>
+                      <div>
+                        <span className="font-semibold text-slate-800 group-hover:text-slate-900">
+                          Administrador Geral
+                        </span>
+                        <span className="text-[10px] text-slate-500 block">
+                          admin@barbernow.com
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-semibold text-slate-700 bg-slate-200 px-2 py-0.5 rounded-md">
+                      Entrar
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => handleQuickLogin('lucas@barbernow.com', 'barber')}
                     className="w-full text-left p-2 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-xs transition flex items-center justify-between cursor-pointer group"
                   >

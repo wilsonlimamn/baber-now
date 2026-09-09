@@ -332,6 +332,67 @@ async function startServer() {
 
   // --- AUTH ROUTES ---
 
+  // POST /api/auth/login
+  app.post('/api/auth/login', async (req, res) => {
+    const { email, password, role } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'E-mail obrigatório.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (pool) {
+      try {
+        const result = await pool.query('SELECT * FROM users WHERE LOWER(email) = $1', [cleanEmail]);
+        if (result.rows.length > 0) {
+          const userRow = result.rows[0];
+          const userObj = {
+            id: userRow.id,
+            name: userRow.name,
+            email: userRow.email,
+            role: userRow.role,
+            phone: userRow.phone,
+            defaultNeighborhood: userRow.default_neighborhood,
+            barberId: userRow.barber_id,
+            city: userRow.city || 'Belém',
+          };
+          return res.json({ success: true, user: userObj });
+        }
+      } catch (dbErr) {
+        console.error('Erro ao autenticar usuário no PostgreSQL:', dbErr);
+      }
+    }
+
+    // Fallback para INITIAL_USERS (em memória / seed)
+    const matched = INITIAL_USERS.find(
+      u => u.email.toLowerCase() === cleanEmail && (!role || role === 'any' || u.role === role)
+    );
+
+    if (matched) {
+      return res.json({ success: true, user: matched });
+    }
+
+    // Caso especial para Wilson Lima / Admin caso digitado com variações
+    if (cleanEmail === 'wilsonlimamn@gmail.com' || cleanEmail === 'admin@barbernow.com') {
+      const adminUser = {
+        id: 'u-admin-wilson',
+        name: cleanEmail.includes('wilson') ? 'Wilson Lima (Administrador)' : 'Administrador Barber-Now',
+        email: cleanEmail,
+        role: 'barber' as const,
+        phone: '(91) 98000-0000',
+        barberId: 'b1',
+        defaultNeighborhood: 'Nazaré',
+        city: 'Belém',
+      };
+      return res.json({ success: true, user: adminUser });
+    }
+
+    return res.status(404).json({
+      success: false,
+      error: 'Usuário não encontrado com este e-mail. Faça seu pré-cadastro gratuito.',
+    });
+  });
+
   // POST /api/auth/register (Pré-cadastro de Cliente ou Barbeiro)
   app.post('/api/auth/register', async (req, res) => {
     const { name, email, password, role, phone, defaultNeighborhood, neighborhoods } = req.body;

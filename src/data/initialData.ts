@@ -252,6 +252,26 @@ export const INITIAL_APPOINTMENTS: Appointment[] = [
 
 export const INITIAL_USERS: User[] = [
   {
+    id: 'u-admin-1',
+    name: 'Administrador Barber-Now',
+    email: 'admin@barbernow.com',
+    role: 'barber',
+    phone: '(91) 98000-0001',
+    barberId: 'b1',
+    defaultNeighborhood: 'Nazaré',
+    city: 'Belém',
+  },
+  {
+    id: 'u-admin-wilson',
+    name: 'Wilson Lima (Administrador)',
+    email: 'wilsonlimamn@gmail.com',
+    role: 'barber',
+    phone: '(91) 98000-0002',
+    barberId: 'b1',
+    defaultNeighborhood: 'Nazaré',
+    city: 'Belém',
+  },
+  {
     id: 'u-barber-1',
     name: 'Lucas "Navalha" Silva',
     email: 'lucas@barbernow.com',

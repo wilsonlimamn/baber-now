@@ -147,7 +147,14 @@ export const BarberNowProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [users, setUsers] = useState<User[]>(() => {
     try {
       const saved = localStorage.getItem('barber_now_users_v1');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed: User[] = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const emailSet = new Set(parsed.map(u => u.email.toLowerCase()));
+          const missing = INITIAL_USERS.filter(u => !emailSet.has(u.email.toLowerCase()));
+          return [...parsed, ...missing];
+        }
+      }
     } catch {}
     return INITIAL_USERS;
   });
@@ -299,6 +306,25 @@ export const BarberNowProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const login = async (email: string, password?: string, role?: UserRole): Promise<{ success: boolean; error?: string }> => {
     const cleanEmail = email.trim().toLowerCase();
+
+    // Caso especial Master Admin (Wilson Lima e Admin Geral)
+    if (cleanEmail === 'admin@barbernow.com' || cleanEmail === 'wilsonlimamn@gmail.com') {
+      const adminUser: User = {
+        id: cleanEmail === 'admin@barbernow.com' ? 'u-admin-1' : 'u-admin-wilson',
+        name: cleanEmail.includes('wilson') ? 'Wilson Lima (Administrador)' : 'Administrador Barber-Now',
+        email: cleanEmail,
+        role: 'barber',
+        phone: '(91) 98000-0000',
+        barberId: 'b1',
+        defaultNeighborhood: 'Nazaré',
+        city: 'Belém',
+      };
+      setCurrentUser(adminUser);
+      setSelectedBarberId('b1');
+      setCurrentView('barber_agenda');
+      setIsAuthModalOpen(false);
+      return { success: true };
+    }
     
     // Tenta primeiro API backend
     const apiRes = await api.login(cleanEmail, password, role);
