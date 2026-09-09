@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, ExternalLink } from 'lucide-react';
+import { Mail, ExternalLink, Smartphone, Download, Sparkles, X } from 'lucide-react';
 import { BarberNowProvider, useBarberNow } from './context/BarberNowContext.tsx';
 import { Header } from './components/Header.tsx';
 import { ClientBookingFlow } from './components/client/ClientBookingFlow.tsx';
@@ -8,11 +8,14 @@ import { BarberRegistrationForm } from './components/barber/BarberRegistrationFo
 import { ClientAppointmentsDrawer } from './components/client/ClientAppointmentsDrawer.tsx';
 import { AuthModal } from './components/auth/AuthModal.tsx';
 import { EmailTestModal } from './components/common/EmailTestModal.tsx';
+import { DownloadAppModal } from './components/common/DownloadAppModal.tsx';
 
 const MainContent: React.FC = () => {
   const { currentView, setCurrentView } = useBarberNow();
   const [isClientDrawerOpen, setIsClientDrawerOpen] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [showTopAppBanner, setShowTopAppBanner] = useState(true);
 
   const renderActiveView = () => {
     switch (currentView) {
@@ -36,8 +39,37 @@ const MainContent: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+      {/* Top Android App Download Notification Ribbon */}
+      {showTopAppBanner && (
+        <div className="bg-gradient-to-r from-emerald-700 via-teal-700 to-blue-700 text-white px-3 py-1.5 text-xs flex items-center justify-between shadow-xs z-30">
+          <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 flex-1 text-center font-medium">
+            <Smartphone className="w-3.5 h-3.5 shrink-0 hidden sm:inline text-emerald-200" />
+            <span className="text-[11px] sm:text-xs">
+              Instale o <strong>Barber-Now</strong> direto no seu celular Android para agendar cortes mais rápido!
+            </span>
+            <button
+              onClick={() => setIsDownloadModalOpen(true)}
+              className="ml-2 inline-flex items-center gap-1 bg-white text-emerald-800 hover:bg-emerald-50 px-2.5 py-0.5 rounded-full font-bold text-[10px] sm:text-[11px] shadow-xs transition cursor-pointer shrink-0"
+            >
+              <Download className="w-3 h-3" />
+              <span>Baixar App (.apk)</span>
+            </button>
+          </div>
+          <button
+            onClick={() => setShowTopAppBanner(false)}
+            className="text-white/80 hover:text-white p-0.5 ml-2 cursor-pointer transition shrink-0"
+            title="Fechar aviso"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Top Header - Fully Responsive */}
-      <Header onOpenClientAppointments={() => setIsClientDrawerOpen(true)} />
+      <Header
+        onOpenClientAppointments={() => setIsClientDrawerOpen(true)}
+        onOpenDownloadApp={() => setIsDownloadModalOpen(true)}
+      />
 
       {/* Main Container - Automatically responsive for mobile & desktop */}
       <main className="flex-1 w-full max-w-full overflow-x-hidden pb-16">
@@ -59,6 +91,12 @@ const MainContent: React.FC = () => {
       <EmailTestModal
         isOpen={isEmailModalOpen}
         onClose={() => setIsEmailModalOpen(false)}
+      />
+
+      {/* Modal Oficial de Download do APK Android */}
+      <DownloadAppModal
+        isOpen={isDownloadModalOpen}
+        onClose={() => setIsDownloadModalOpen(false)}
       />
 
       {/* Bottom Footer */}
@@ -96,12 +134,21 @@ const MainContent: React.FC = () => {
               </button>
               <span className="text-slate-700 hidden sm:inline">•</span>
               <button
+                onClick={() => setIsDownloadModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-950/80 hover:bg-emerald-900/90 text-emerald-400 hover:text-emerald-300 border border-emerald-800/80 font-medium transition cursor-pointer"
+                title="Baixar APK oficial do Barber-Now para celular Android"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Baixar App Android (.apk)</span>
+              </button>
+              <span className="text-slate-700 hidden sm:inline">•</span>
+              <button
                 onClick={() => setIsEmailModalOpen(true)}
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800 hover:bg-blue-600/30 text-blue-400 hover:text-blue-300 border border-slate-700 font-medium transition cursor-pointer"
                 title="Testar envio de e-mails de confirmação via site3facil@gmail.com"
               >
                 <Mail className="w-3.5 h-3.5" />
-                <span>Testar E-mails (site3facil@gmail.com)</span>
+                <span>Testar E-mails</span>
               </button>
             </div>
           </div>

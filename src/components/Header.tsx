@@ -1,12 +1,13 @@
 import React from 'react';
-import { Calendar, UserCheck, Clock, Sparkles, LogIn, LogOut, User as UserIcon, Scissors } from 'lucide-react';
+import { Calendar, UserCheck, Clock, Sparkles, LogIn, LogOut, User as UserIcon, Scissors, Smartphone, Download } from 'lucide-react';
 import { useBarberNow } from '../context/BarberNowContext.tsx';
 
 interface HeaderProps {
   onOpenClientAppointments: () => void;
+  onOpenDownloadApp?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenClientAppointments }) => {
+export const Header: React.FC<HeaderProps> = ({ onOpenClientAppointments, onOpenDownloadApp }) => {
   const {
     currentView,
     setCurrentView,
@@ -107,6 +108,23 @@ export const Header: React.FC<HeaderProps> = ({ onOpenClientAppointments }) => {
 
           {/* Right Action Tools */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Baixar App Android */}
+            {onOpenDownloadApp && (
+              <button
+                id="btn-download-app-header"
+                onClick={onOpenDownloadApp}
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
+                title="Baixar App Android (.apk)"
+              >
+                <Smartphone className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden sm:inline">Baixar App</span>
+                <span className="sm:hidden text-[11px]">App</span>
+                <span className="text-[9px] bg-emerald-700/80 px-1 py-0.5 rounded font-bold uppercase hidden md:inline">
+                  APK
+                </span>
+              </button>
+            )}
+
             {/* My Appointments for Client */}
             <button
               id="btn-client-appointments"

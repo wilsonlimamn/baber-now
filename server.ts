@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import { pool, initDb } from './src/db/database.ts';
 import { INITIAL_BARBERS, INITIAL_APPOINTMENTS, INITIAL_NEIGHBORHOODS, INITIAL_USERS } from './src/data/initialData.ts';
@@ -48,6 +49,53 @@ async function startServer() {
       database: dbStatus,
       timestamp: new Date().toISOString(),
     });
+  });
+
+  // Download do APK Android do Barber-Now
+  app.get(['/download/app', '/download/barbernow.apk', '/barber-now.apk', '/download/apk'], (req, res) => {
+    const possiblePaths = [
+      path.join(process.cwd(), 'public', 'barber-now.apk'),
+      path.join(process.cwd(), 'dist', 'barber-now.apk'),
+      path.join(process.cwd(), 'android', 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk'),
+      path.join(process.cwd(), 'android', 'app', 'build', 'outputs', 'apk', 'release', 'app-release-unsigned.apk'),
+      path.join(process.cwd(), 'barber-now.apk'),
+    ];
+
+    for (const filePath of possiblePaths) {
+      if (fs.existsSync(filePath)) {
+        res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+        res.setHeader('Content-Disposition', 'attachment; filename="barber-now.apk"');
+        return res.sendFile(filePath);
+      }
+    }
+
+    res.status(404).send(`
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="utf-8">
+        <title>Download Barber-Now APK</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; text-align: center; padding: 40px 20px; margin: 0; }
+          .card { max-width: 480px; margin: 40px auto; background: #1e293b; padding: 32px; border-radius: 16px; border: 1px solid #334155; box-shadow: 0 10px 25px rgba(0,0,0,0.4); }
+          h1 { color: #38bdf8; font-size: 22px; margin-top: 0; }
+          p { color: #94a3b8; font-size: 14px; line-height: 1.6; }
+          .highlight { background: #0f172a; border: 1px solid #334155; padding: 10px; border-radius: 8px; font-family: monospace; color: #38bdf8; word-break: break-all; margin: 16px 0; }
+          .btn { display: inline-block; background: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 15px; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h1>💈 Barber-Now APK</h1>
+          <p>O arquivo do aplicativo Android ainda não foi copiado para a pasta <code>public/</code> do servidor.</p>
+          <div class="highlight">Copie seu <strong>app-debug.apk</strong> para <strong>public/barber-now.apk</strong></div>
+          <p>Assim que o arquivo estiver na pasta, o download começará imediatamente.</p>
+          <a class="btn" href="/">Voltar para o Barber-Now</a>
+        </div>
+      </body>
+      </html>
+    `);
   });
 
   // GET Barbers

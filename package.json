@@ -12,6 +12,7 @@
     "cap:sync": "cap sync android",
     "cap:open": "cap open android",
     "cap:build": "vite build && cap sync android",
+    "copy:apk": "node scripts/copy-apk.js",
     "generate:icons": "node scripts/generate-android-icons.js"
   },
   "dependencies": {
