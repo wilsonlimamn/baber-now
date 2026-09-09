@@ -5,41 +5,41 @@
     android:viewportWidth="160"
     android:viewportHeight="160">
 
-    <!-- Fundo circular sutil em Ardósia Escura -->
+    <!-- Fundo circular Branco com leve relevo -->
     <path
-        android:fillColor="#1E293B"
+        android:fillColor="#FFFFFF"
         android:pathData="M80,80m-70,0a70,70 0 1,0 140,0a70,70 0 1,0 -140,0" />
 
-    <!-- Aro Dourado Premium de Borda -->
+    <!-- Aro Azul Elegante de Borda -->
     <path
-        android:strokeColor="#F59E0B"
+        android:strokeColor="#2563EB"
         android:strokeWidth="3.5"
         android:fillColor="#00000000"
         android:pathData="M80,80m-66,0a66,66 0 1,0 132,0a66,66 0 1,0 -132,0" />
 
-    <!-- PENTE DE BARBEIRO (Barber Comb) Inclinado -->
-    <!-- Dorso do Pente Dourado -->
+    <!-- PENTE DE BARBEIRO Azul Escuro Inclinado -->
+    <!-- Dorso do Pente -->
     <path
-        android:fillColor="#F59E0B"
+        android:fillColor="#1D4ED8"
         android:pathData="M40,65 L118,65 C121,65 123,67 123,70 L123,75 C123,78 121,80 118,80 L40,80 C37,80 35,78 35,75 L35,70 C35,67 37,65 40,65 Z" />
 
-    <!-- Dentes do Pente -->
+    <!-- Dentes do Pente em Azul Claro / Sky -->
     <path
-        android:strokeColor="#FBBF24"
-        android:strokeWidth="2"
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="2.2"
         android:strokeLineCap="round"
         android:pathData="M43,80 L43,98 M50,80 L50,98 M57,80 L57,98 M64,80 L64,98 M71,80 L71,98 M78,80 L78,98 M85,80 L85,98 M92,80 L92,98 M99,80 L99,98 M106,80 L106,98 M113,80 L113,98" />
 
-    <!-- TESOURA DE BARBEIRO PROFISSIONAL (Shears) -->
+    <!-- TESOURA DE BARBEIRO EM AZUL REAL E AZUL CELESTE -->
     <!-- Olhal e Haste Esquerda da Tesoura -->
     <path
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="4"
+        android:strokeColor="#1E40AF"
+        android:strokeWidth="4.2"
         android:fillColor="#00000000"
         android:pathData="M52,118m-11,0a11,11 0 1,0 22,0a11,11 0 1,0 -22,0" />
 
     <path
-        android:strokeColor="#FFFFFF"
+        android:strokeColor="#1E40AF"
         android:strokeWidth="4.5"
         android:strokeLineCap="round"
         android:fillColor="#00000000"
@@ -47,18 +47,18 @@
 
     <!-- Lâmina Direita Apontando para Cima -->
     <path
-        android:fillColor="#FFFFFF"
+        android:fillColor="#1E40AF"
         android:pathData="M77,88 L122,43 C124,41 125,43 124,45 L85,92 Z" />
 
     <!-- Olhal e Haste Direita da Tesoura -->
     <path
-        android:strokeColor="#E2E8F0"
-        android:strokeWidth="4"
+        android:strokeColor="#0284C7"
+        android:strokeWidth="4.2"
         android:fillColor="#00000000"
         android:pathData="M108,118m-11,0a11,11 0 1,0 22,0a11,11 0 1,0 -22,0" />
 
     <path
-        android:strokeColor="#E2E8F0"
+        android:strokeColor="#0284C7"
         android:strokeWidth="4.5"
         android:strokeLineCap="round"
         android:fillColor="#00000000"
@@ -66,23 +66,23 @@
 
     <!-- Lâmina Esquerda Apontando para Cima -->
     <path
-        android:fillColor="#E2E8F0"
+        android:fillColor="#0284C7"
         android:pathData="M83,88 L38,43 C36,41 35,43 36,45 L75,92 Z" />
 
     <!-- Apoio de Dedo / Tang no Olhal Esquerdo -->
     <path
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="2.5"
+        android:strokeColor="#1E40AF"
+        android:strokeWidth="2.8"
         android:strokeLineCap="round"
         android:fillColor="#00000000"
         android:pathData="M42,122 C36,128 34,134 36,137" />
 
-    <!-- Parafuso de Articulação Central Dourado da Tesoura -->
+    <!-- Parafuso de Articulação Central Azul -->
     <path
-        android:fillColor="#F59E0B"
+        android:fillColor="#2563EB"
         android:pathData="M80,88m-5,0a5,5 0 1,0 10,0a5,5 0 1,0 -10,0" />
     <path
-        android:fillColor="#3B82F6"
+        android:fillColor="#93C5FD"
         android:pathData="M80,88m-2,0a2,2 0 1,0 4,0a2,2 0 1,0 -4,0" />
 
 </vector>
