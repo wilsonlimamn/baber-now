@@ -50,6 +50,33 @@ async function startServer() {
     });
   });
 
+  // Verificação de Versão e Atualizações do App / Web
+  app.get(['/api/app/version', '/api/version'], (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    res.json({
+      version: '1.2.0',
+      versionCode: 102,
+      appName: 'Barber-Now Belém',
+      releaseDate: '2026-09-09',
+      minRequiredVersion: '1.0.0',
+      apkDownloadUrl: 'https://barbernow.3facil.com/barber-now.apk',
+      webUrl: 'https://barbernow.3facil.com',
+      forceUpdate: false,
+      title: 'Atualização Barber-Now v1.2.0',
+      message: 'Nova versão disponível com identidade visual em fundo branco, tesoura azul e sincronização em tempo real!',
+      changelog: [
+        'Novo visual: Fundo branco limpo com tesoura e pente azul royal.',
+        'Verificação automática de atualizações ao inicializar.',
+        'Persistência otimizada no PostgreSQL com fallback resiliente.',
+        'Deploy automatizado no servidor via GitHub Actions.',
+        'Melhorias de velocidade e menor consumo de memória.'
+      ],
+    });
+  });
+
   // Download do APK Android do Barber-Now
   app.get(['/download/app', '/download/barbernow.apk', '/barber-now.apk', '/download/apk'], (req, res) => {
     const possiblePaths = [
@@ -640,6 +667,9 @@ async function startServer() {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

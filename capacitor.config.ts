@@ -11,9 +11,9 @@ const config: CapacitorConfig = {
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 2000,
+      launchShowDuration: 1800,
       launchAutoHide: true,
-      backgroundColor: '#0f172a', // Cor marinho/ardósia premium oficial do Barber-Now
+      backgroundColor: '#ffffff', // Fundo branco oficial do Barber-Now
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,

@@ -1,0 +1,58 @@
+name: Gerar APK Android Barber-Now
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'android/**'
+      - 'src/**'
+      - 'public/**'
+      - 'package.json'
+      - 'capacitor.config.ts'
+    branches:
+      - main
+
+jobs:
+  build-apk:
+    name: 📱 Gerar APK Android Barber-Now
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Instalar Dependências
+        run: npm ci || npm install
+
+      - name: Compilar Aplicação Web (Vite)
+        run: npm run build
+
+      - name: Configurar Java 17 (JDK)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Sincronizar Capacitor com Android
+        run: npx cap sync android
+
+      - name: Dar permissão de execução ao Gradle Wrapper
+        run: chmod +x android/gradlew
+
+      - name: Compilar APK (assembleDebug)
+        run: |
+          cd android
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Salvar APK como Artefato para Download
+        uses: actions/upload-artifact@v4
+        with:
+          name: Barber-Now-Debug-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30

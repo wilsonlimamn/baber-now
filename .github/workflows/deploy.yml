@@ -1,0 +1,76 @@
+name: Barber-Now CI/CD - Auto Deploy VPS
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: 🧪 Validar Build do Applet
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Instalar dependências
+        run: npm ci || npm install
+
+      - name: Compilar App Web e Server
+        run: npm run build
+
+  deploy-vps:
+    name: 🚀 Deploy Automático no Servidor
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    steps:
+      - name: Executar atualização via SSH na VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME || 'ec2-user' }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script_stop: true
+          script: |
+            echo "💈 ====================================================="
+            echo "🚀 Iniciando atualização automática do Barber-Now..."
+            echo "💈 ====================================================="
+            
+            # Localiza diretório do projeto no servidor
+            if [ -d "$HOME/app_barbernow" ]; then
+              cd "$HOME/app_barbernow"
+            elif [ -d "$HOME/baber-now" ]; then
+              cd "$HOME/baber-now"
+            elif [ -d "/home/ec2-user/app_barbernow" ]; then
+              cd "/home/ec2-user/app_barbernow"
+            else
+              echo "⚠️ Diretório do Barber-Now não encontrado! Criando ou usando pasta atual..."
+              mkdir -p "$HOME/app_barbernow"
+              cd "$HOME/app_barbernow"
+            fi
+
+            echo "📁 Diretório ativo: $(pwd)"
+            
+            # Garante sincronização 100% limpa com o GitHub sem conflitos locais
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "🐳 Reconstruindo containers Docker..."
+            docker compose down || true
+            docker compose build --no-cache
+            docker compose up -d
+
+            echo "✅ Status dos containers:"
+            docker ps --filter "name=barber"
+            echo "🎉 Atualização Barber-Now finalizada com sucesso!"

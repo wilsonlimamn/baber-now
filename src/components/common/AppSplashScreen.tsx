@@ -116,7 +116,9 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
           />
         </div>
         <div className="flex items-center justify-between text-[10px] text-slate-500 mt-2 font-medium">
-          <span>Iniciando...</span>
+          <span>
+            {progress < 60 ? 'Buscando atualizações...' : progress < 90 ? 'Sincronizando barbearia...' : 'Pronto!'}
+          </span>
           <span className="text-blue-600 font-bold">{progress}%</span>
         </div>
       </div>

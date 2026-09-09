@@ -1,56 +1,56 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0F172A"/>
-      <stop offset="100%" stop-color="#1E293B"/>
-    </linearGradient>
-    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FDE68A"/>
-      <stop offset="50%" stop-color="#F59E0B"/>
-      <stop offset="100%" stop-color="#B45309"/>
-    </linearGradient>
-    <linearGradient id="steelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#FFFFFF"/>
-      <stop offset="60%" stop-color="#E2E8F0"/>
-      <stop offset="100%" stop-color="#94A3B8"/>
+      <stop offset="100%" stop-color="#F8FAFC"/>
+    </linearGradient>
+    <linearGradient id="blueMainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="50%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="blueLightGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60A5FA"/>
+      <stop offset="60%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#0284C7"/>
     </linearGradient>
   </defs>
   <circle cx="256" cy="256" r="240" fill="url(#bgGrad)"/>
-  <circle cx="256" cy="256" r="226" fill="none" stroke="url(#goldGrad)" stroke-width="12"/>
+  <circle cx="256" cy="256" r="226" fill="none" stroke="url(#blueMainGrad)" stroke-width="12"/>
 
-  <!-- Pente Dourado Inclinado -->
+  <!-- Pente Azul Inclinado -->
   <g transform="rotate(-35 256 256)">
-    <rect x="130" y="235" width="252" height="34" rx="10" fill="url(#goldGrad)"/>
-    <rect x="145" y="269" width="9" height="55" rx="3" fill="url(#goldGrad)"/>
-    <rect x="162" y="269" width="9" height="55" rx="3" fill="url(#goldGrad)"/>
-    <rect x="179" y="269" width="9" height="55" rx="3" fill="url(#goldGrad)"/>
-    <rect x="196" y="269" width="9" height="55" rx="3" fill="url(#goldGrad)"/>
-    <rect x="213" y="269" width="9" height="55" rx="3" fill="url(#goldGrad)"/>
-    <rect x="230" y="269" width="9" height="55" rx="3" fill="url(#goldGrad)"/>
-    <rect x="247" y="269" width="6" height="52" rx="2" fill="url(#goldGrad)"/>
-    <rect x="259" y="269" width="6" height="52" rx="2" fill="url(#goldGrad)"/>
-    <rect x="271" y="269" width="6" height="52" rx="2" fill="url(#goldGrad)"/>
-    <rect x="283" y="269" width="6" height="52" rx="2" fill="url(#goldGrad)"/>
-    <rect x="295" y="269" width="6" height="52" rx="2" fill="url(#goldGrad)"/>
-    <rect x="307" y="269" width="6" height="52" rx="2" fill="url(#goldGrad)"/>
-    <rect x="319" y="269" width="6" height="52" rx="2" fill="url(#goldGrad)"/>
-    <rect x="331" y="269" width="6" height="52" rx="2" fill="url(#goldGrad)"/>
-    <rect x="343" y="269" width="6" height="52" rx="2" fill="url(#goldGrad)"/>
-    <rect x="355" y="269" width="6" height="52" rx="2" fill="url(#goldGrad)"/>
+    <rect x="130" y="235" width="252" height="34" rx="10" fill="url(#blueMainGrad)"/>
+    <rect x="145" y="269" width="9" height="55" rx="3" fill="url(#blueLightGrad)"/>
+    <rect x="162" y="269" width="9" height="55" rx="3" fill="url(#blueLightGrad)"/>
+    <rect x="179" y="269" width="9" height="55" rx="3" fill="url(#blueLightGrad)"/>
+    <rect x="196" y="269" width="9" height="55" rx="3" fill="url(#blueLightGrad)"/>
+    <rect x="213" y="269" width="9" height="55" rx="3" fill="url(#blueLightGrad)"/>
+    <rect x="230" y="269" width="9" height="55" rx="3" fill="url(#blueLightGrad)"/>
+    <rect x="247" y="269" width="6" height="52" rx="2" fill="url(#blueLightGrad)"/>
+    <rect x="259" y="269" width="6" height="52" rx="2" fill="url(#blueLightGrad)"/>
+    <rect x="271" y="269" width="6" height="52" rx="2" fill="url(#blueLightGrad)"/>
+    <rect x="283" y="269" width="6" height="52" rx="2" fill="url(#blueLightGrad)"/>
+    <rect x="295" y="269" width="6" height="52" rx="2" fill="url(#blueLightGrad)"/>
+    <rect x="307" y="269" width="6" height="52" rx="2" fill="url(#blueLightGrad)"/>
+    <rect x="319" y="269" width="6" height="52" rx="2" fill="url(#blueLightGrad)"/>
+    <rect x="331" y="269" width="6" height="52" rx="2" fill="url(#blueLightGrad)"/>
+    <rect x="343" y="269" width="6" height="52" rx="2" fill="url(#blueLightGrad)"/>
+    <rect x="355" y="269" width="6" height="52" rx="2" fill="url(#blueLightGrad)"/>
   </g>
 
-  <!-- Tesoura Aço Inox Cruzando -->
+  <!-- Tesoura Azul Cruzando -->
   <g>
-    <circle cx="160" cy="370" r="38" fill="none" stroke="url(#steelGrad)" stroke-width="18"/>
-    <path d="M 125 385 C 110 405 105 425 110 435" fill="none" stroke="url(#steelGrad)" stroke-width="9" stroke-linecap="round"/>
-    <path d="M 185 345 L 245 270" stroke="url(#steelGrad)" stroke-width="20" stroke-linecap="round"/>
-    <path d="M 245 270 Q 305 210 380 135 C 385 130 388 134 384 140 Q 310 230 265 270 Z" fill="url(#steelGrad)"/>
+    <circle cx="160" cy="370" r="38" fill="none" stroke="url(#blueMainGrad)" stroke-width="18"/>
+    <path d="M 125 385 C 110 405 105 425 110 435" fill="none" stroke="url(#blueMainGrad)" stroke-width="9" stroke-linecap="round"/>
+    <path d="M 185 345 L 245 270" stroke="url(#blueMainGrad)" stroke-width="20" stroke-linecap="round"/>
+    <path d="M 245 270 Q 305 210 380 135 C 385 130 388 134 384 140 Q 310 230 265 270 Z" fill="url(#blueMainGrad)"/>
 
-    <circle cx="340" cy="370" r="38" fill="none" stroke="url(#steelGrad)" stroke-width="18"/>
-    <path d="M 315 345 L 255 270" stroke="url(#steelGrad)" stroke-width="20" stroke-linecap="round"/>
-    <path d="M 255 270 Q 195 210 125 135 C 120 130 117 134 121 140 Q 195 230 240 270 Z" fill="url(#steelGrad)"/>
+    <circle cx="340" cy="370" r="38" fill="none" stroke="url(#blueLightGrad)" stroke-width="18"/>
+    <path d="M 315 345 L 255 270" stroke="url(#blueLightGrad)" stroke-width="20" stroke-linecap="round"/>
+    <path d="M 255 270 Q 195 210 125 135 C 120 130 117 134 121 140 Q 195 230 240 270 Z" fill="url(#blueLightGrad)"/>
 
-    <circle cx="256" cy="270" r="18" fill="url(#goldGrad)"/>
-    <circle cx="256" cy="270" r="7" fill="#2563EB"/>
+    <circle cx="256" cy="270" r="18" fill="url(#blueMainGrad)"/>
+    <circle cx="256" cy="270" r="7" fill="#93C5FD"/>
   </g>
 </svg>

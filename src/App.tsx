@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mail, ExternalLink, Smartphone, Download, Sparkles, X } from 'lucide-react';
 import { BarberNowProvider, useBarberNow } from './context/BarberNowContext.tsx';
 import { Header } from './components/Header.tsx';
@@ -10,6 +10,8 @@ import { AuthModal } from './components/auth/AuthModal.tsx';
 import { EmailTestModal } from './components/common/EmailTestModal.tsx';
 import { DownloadAppModal } from './components/common/DownloadAppModal.tsx';
 import { AppSplashScreen } from './components/common/AppSplashScreen.tsx';
+import { UpdateModal } from './components/common/UpdateModal.tsx';
+import { checkAppUpdate, AppVersionInfo } from './services/updateService.ts';
 
 const MainContent: React.FC = () => {
   const { currentView, setCurrentView } = useBarberNow();
@@ -18,6 +20,33 @@ const MainContent: React.FC = () => {
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [showTopAppBanner, setShowTopAppBanner] = useState(true);
+
+  // Rotina de verificação de atualização ao abrir o app
+  const [updateInfo, setUpdateInfo] = useState<AppVersionInfo | null>(null);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isNativeApp, setIsNativeApp] = useState(false);
+
+  useEffect(() => {
+    // Busca atualização assim que o app é inicializado
+    const verifyUpdate = async () => {
+      try {
+        const result = await checkAppUpdate();
+        setIsNativeApp(result.isNativeApp);
+        if (result.hasUpdate && result.info) {
+          console.log('🔔 Nova atualização Barber-Now encontrada:', result.info.version);
+          setUpdateInfo(result.info);
+          // Abre o aviso após o splash screen
+          setTimeout(() => {
+            setIsUpdateModalOpen(true);
+          }, 1500);
+        }
+      } catch (e) {
+        console.warn('Verificação de versão ignorada:', e);
+      }
+    };
+
+    verifyUpdate();
+  }, []);
 
   const renderActiveView = () => {
     switch (currentView) {
@@ -109,13 +138,21 @@ const MainContent: React.FC = () => {
         onClose={() => setIsDownloadModalOpen(false)}
       />
 
+      {/* Modal Automático de Verificação de Atualização ao Abrir o App */}
+      <UpdateModal
+        isOpen={isUpdateModalOpen}
+        onClose={() => setIsUpdateModalOpen(false)}
+        updateInfo={updateInfo}
+        isNativeApp={isNativeApp}
+      />
+
       {/* Bottom Footer */}
       <footer className="bg-slate-900 border-t border-slate-800 py-7 px-4 text-xs text-slate-400 w-full overflow-x-hidden">
         <div className="max-w-7xl mx-auto space-y-5">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm shrink-0">
-                B
+              <div className="w-8 h-8 rounded-lg bg-white p-1 flex items-center justify-center border border-blue-500/30 shadow-xs shrink-0">
+                <img src="/favicon.svg" alt="Barber-Now" className="w-full h-full object-contain" />
               </div>
               <span className="text-white font-semibold text-sm">Barber-Now Belém</span>
               <span className="text-slate-400 text-[11px] sm:text-xs hidden sm:inline">— Barbearia em Domicílio</span>
