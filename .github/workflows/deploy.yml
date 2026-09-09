@@ -40,6 +40,8 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           password: ${{ secrets.VPS_PASSWORD }}
           port: ${{ secrets.VPS_PORT || 22 }}
+          timeout: 120s
+          command_timeout: 30m
           script_stop: true
           script: |
             echo "💈 ====================================================="
@@ -66,8 +68,7 @@ jobs:
             git reset --hard origin/main
 
             echo "🐳 Reconstruindo containers Docker..."
-            docker compose down || true
-            docker compose build --no-cache
+            docker compose build
             docker compose up -d
 
             echo "✅ Status dos containers:"
