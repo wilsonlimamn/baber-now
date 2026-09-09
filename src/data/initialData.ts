@@ -263,6 +263,16 @@ export const INITIAL_USERS: User[] = [
   },
   {
     id: 'u-admin-wilson',
+    name: 'Wilson Lima (Administrador Master)',
+    email: 'wilsinhofly@gmail.com',
+    role: 'barber',
+    phone: '(91) 98000-0000',
+    barberId: 'b1',
+    defaultNeighborhood: 'Nazaré',
+    city: 'Belém',
+  },
+  {
+    id: 'u-admin-wilson-git',
     name: 'Wilson Lima (Administrador)',
     email: 'wilsonlimamn@gmail.com',
     role: 'barber',

@@ -308,11 +308,21 @@ export const BarberNowProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const cleanEmail = email.trim().toLowerCase();
 
     // Caso especial Master Admin (Wilson Lima e Admin Geral)
-    if (cleanEmail === 'admin@barbernow.com' || cleanEmail === 'wilsonlimamn@gmail.com') {
+    const isAdminEmail = 
+      cleanEmail === 'admin@barbernow.com' ||
+      cleanEmail === 'admin' ||
+      cleanEmail === 'admin@admin.com' ||
+      cleanEmail === 'wilsinhofly@gmail.com' ||
+      cleanEmail === 'wilsonlimamn@gmail.com' ||
+      cleanEmail.includes('wilsinho') ||
+      cleanEmail.includes('wilsonlima');
+
+    if (isAdminEmail) {
+      const isWilson = cleanEmail.includes('wilson') || cleanEmail.includes('wilsin');
       const adminUser: User = {
-        id: cleanEmail === 'admin@barbernow.com' ? 'u-admin-1' : 'u-admin-wilson',
-        name: cleanEmail.includes('wilson') ? 'Wilson Lima (Administrador)' : 'Administrador Barber-Now',
-        email: cleanEmail,
+        id: isWilson ? 'u-admin-wilson' : 'u-admin-1',
+        name: isWilson ? 'Wilson Lima (Administrador Master)' : 'Administrador Barber-Now',
+        email: cleanEmail.includes('@') ? cleanEmail : (isWilson ? 'wilsinhofly@gmail.com' : 'admin@barbernow.com'),
         role: 'barber',
         phone: '(91) 98000-0000',
         barberId: 'b1',

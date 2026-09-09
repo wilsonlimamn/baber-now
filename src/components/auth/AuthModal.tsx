@@ -391,7 +391,7 @@ export const AuthModal: React.FC = () => {
                 <div className="space-y-1.5">
                   <button
                     type="button"
-                    onClick={() => handleQuickLogin('wilsonlimamn@gmail.com', 'barber')}
+                    onClick={() => handleQuickLogin('wilsinhofly@gmail.com', 'barber')}
                     className="w-full text-left p-2 rounded-xl bg-purple-50 hover:bg-purple-100/70 border border-purple-200 text-xs transition flex items-center justify-between cursor-pointer group"
                   >
                     <div className="flex items-center gap-2">
@@ -400,10 +400,10 @@ export const AuthModal: React.FC = () => {
                       </div>
                       <div>
                         <span className="font-semibold text-slate-800 group-hover:text-purple-700">
-                          Wilson Lima (Administrador)
+                          Wilson Lima (Master)
                         </span>
                         <span className="text-[10px] text-slate-500 block">
-                          wilsonlimamn@gmail.com • Painel Master
+                          wilsinhofly@gmail.com • Administrador
                         </span>
                       </div>
                     </div>
@@ -431,7 +431,7 @@ export const AuthModal: React.FC = () => {
                       </div>
                     </div>
                     <span className="text-[11px] font-semibold text-slate-700 bg-slate-200 px-2 py-0.5 rounded-md">
-                      Entrar
+                      Entrar Admin
                     </span>
                   </button>
 

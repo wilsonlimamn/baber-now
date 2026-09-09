@@ -373,11 +373,21 @@ async function startServer() {
     }
 
     // Caso especial para Wilson Lima / Admin caso digitado com variações
-    if (cleanEmail === 'wilsonlimamn@gmail.com' || cleanEmail === 'admin@barbernow.com') {
+    const isAdminEmail = 
+      cleanEmail === 'admin@barbernow.com' ||
+      cleanEmail === 'admin' ||
+      cleanEmail === 'admin@admin.com' ||
+      cleanEmail === 'wilsinhofly@gmail.com' ||
+      cleanEmail === 'wilsonlimamn@gmail.com' ||
+      cleanEmail.includes('wilsinho') ||
+      cleanEmail.includes('wilsonlima');
+
+    if (isAdminEmail) {
+      const isWilson = cleanEmail.includes('wilson') || cleanEmail.includes('wilsin');
       const adminUser = {
-        id: 'u-admin-wilson',
-        name: cleanEmail.includes('wilson') ? 'Wilson Lima (Administrador)' : 'Administrador Barber-Now',
-        email: cleanEmail,
+        id: isWilson ? 'u-admin-wilson' : 'u-admin-1',
+        name: isWilson ? 'Wilson Lima (Administrador Master)' : 'Administrador Barber-Now',
+        email: cleanEmail.includes('@') ? cleanEmail : (isWilson ? 'wilsinhofly@gmail.com' : 'admin@barbernow.com'),
         role: 'barber' as const,
         phone: '(91) 98000-0000',
         barberId: 'b1',
@@ -593,61 +603,6 @@ async function startServer() {
         error: err?.message || 'Erro ao processar envio de teste.',
       });
     }
-  });
-
-  // POST /api/auth/login
-  app.post('/api/auth/login', async (req, res) => {
-    const { email, password, role } = req.body;
-    if (!email) {
-      return res.status(400).json({ success: false, error: 'Informe o e-mail.' });
-    }
-
-    const cleanEmail = email.trim().toLowerCase();
-
-    if (pool) {
-      try {
-        let query = 'SELECT * FROM users WHERE LOWER(email) = $1';
-        const params: any[] = [cleanEmail];
-        if (role) {
-          query += ' AND role = $2';
-          params.push(role);
-        }
-
-        const { rows } = await pool.query(query, params);
-        if (rows.length > 0) {
-          const u = rows[0];
-          return res.json({
-            success: true,
-            user: {
-              id: u.id,
-              name: u.name,
-              email: u.email,
-              role: u.role,
-              phone: u.phone,
-              defaultNeighborhood: u.default_neighborhood,
-              barberId: u.barber_id,
-              city: u.city || 'Belém',
-            },
-          });
-        }
-      } catch (err) {
-        console.error('Erro no login via banco:', err);
-      }
-    }
-
-    // Fallback para os usuários iniciais em memória
-    const foundInitial = INITIAL_USERS.find(
-      u => u.email.toLowerCase() === cleanEmail && (!role || u.role === role)
-    );
-
-    if (foundInitial) {
-      return res.json({ success: true, user: foundInitial });
-    }
-
-    return res.status(401).json({
-      success: false,
-      error: 'Usuário não encontrado com este e-mail. Faça seu pré-cadastro gratuito.',
-    });
   });
 
   // GET /api/auth/users
