@@ -1,8 +1,8 @@
-# Dockerfile para subir no seu servidor com Node.js 20 Alpine (multi-stage)
-# Build idêntico ao padrão dos seus outros contêineres
+# Dockerfile para subir no seu servidor com Node.js 22 Alpine (multi-stage)
+# Build leve e compatível com as versões mais recentes das dependências
 
 # Estágio 1: Build
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
@@ -12,7 +12,7 @@ COPY . .
 RUN npm run build
 
 # Estágio 2: Execução leve
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
